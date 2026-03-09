@@ -1,0 +1,468 @@
+/* ========================================
+   ONBOARDING SCREEN STYLES
+   ======================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+:root {
+    --glass-bg: rgba(255, 255, 255, 0.15);
+    --glass-darker: rgba(0, 0, 0, 0.2);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --text-main: #ffffff;
+    --text-muted: rgba(255, 255, 255, 0.7);
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --color-blue: #4facfe;
+    --color-yellow: #f6d365;
+    --color-pink: #f093fb;
+}
+
+body {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    color: var(--text-main);
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.onboarding-page-bg {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: url('https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat;
+}
+
+.onboarding-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.onboarding-card {
+    position: relative;
+    width: 90%;
+    max-width: 500px;
+    margin: auto;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1.5px solid rgba(255, 255, 255, 0.4);
+    border-left: 1.5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 28px;
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 40px rgba(79, 172, 254, 0.1);
+    animation: onboardingSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1;
+}
+
+@keyframes onboardingSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Header */
+.onboarding-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.onboarding-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: inline-block;
+    animation: waveHand 2s ease-in-out infinite;
+}
+
+@keyframes waveHand {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(15deg); }
+    40% { transform: rotate(-10deg); }
+    60% { transform: rotate(5deg); }
+    80% { transform: rotate(-3deg); }
+}
+
+.onboarding-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.onboarding-header p {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+}
+
+/* Body */
+.onboarding-body {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.onboarding-field {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.onboarding-field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 0.3px;
+}
+
+/* Search Input */
+.onboarding-search {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 14px 18px;
+    transition: all 0.3s ease;
+}
+
+.onboarding-search:focus-within {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(79, 172, 254, 0.5);
+    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.15);
+}
+
+.onboarding-search i {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 16px;
+    margin-right: 12px;
+}
+
+.onboarding-search input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #ffffff;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+}
+
+.onboarding-search input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* GPS Location Button */
+.gps-location-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #4facfe;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 4px 0;
+}
+
+.gps-location-btn:hover {
+    color: #00f2fe;
+    text-decoration: underline;
+}
+
+.gps-location-btn i {
+    font-size: 14px;
+}
+
+.gps-location-btn.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.gps-location-btn.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Segmented Controls Row */
+.onboarding-options-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.segmented-control {
+    display: flex;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    padding: 4px;
+    position: relative;
+}
+
+.segmented-control .seg-option {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.segmented-control .seg-option.active {
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.segmented-control .seg-option:not(.active):hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Footer */
+.onboarding-footer {
+    margin-top: 8px;
+}
+
+.btn-onboarding {
+    width: 100%;
+    padding: 16px 32px;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 20px rgba(79, 172, 254, 0.35);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-onboarding::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-onboarding:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(79, 172, 254, 0.5);
+}
+
+.btn-onboarding:hover::before {
+    left: 100%;
+}
+
+.btn-onboarding:active {
+    transform: translateY(0);
+}
+
+.btn-onboarding i {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+}
+
+.btn-onboarding:hover i {
+    transform: translateX(4px);
+}
+
+/* Toast Notification */
+#toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 24px;
+    border-radius: 50px;
+    z-index: 10000;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0088ff;
+    background: rgba(255,255,255,0.9);
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    bottom: -100px;
+}
+
+#toast-notification.show {
+    bottom: 20px;
+}
+
+#toast-notification i {
+    color: #00c853;
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.loading-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-content {
+    text-align: center;
+    color: #fff;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #4facfe;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+.loading-text {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Search Dropdown Styles */
+.onboarding-search-container {
+    position: relative;
+    width: 100%;
+}
+
+.onboarding-search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(79, 172, 254, 0.3);
+    border-radius: 12px;
+    margin-top: 8px;
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.onboarding-search-dropdown.show {
+    display: block;
+}
+
+.onboarding-search-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.onboarding-search-dropdown::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.onboarding-search-dropdown::-webkit-scrollbar-thumb {
+    background: rgba(79, 172, 254, 0.5);
+    border-radius: 3px;
+}
+
+.onboarding-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.onboarding-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.onboarding-dropdown-item:hover {
+    background: rgba(79, 172, 254, 0.15);
+}
+
+.onboarding-dropdown-item i {
+    color: #4facfe;
+    font-size: 14px;
+}
+
+.onboarding-dropdown-item span {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.onboarding-dropdown-item .region {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.onboarding-dropdown-muted {
+    padding: 16px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    font-style: italic;
+}
+

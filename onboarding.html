@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - Premium Weather & Planner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="./css/onboarding.css">
+</head>
+<body>
+    <div class="onboarding-page-bg">
+        <!-- Toast Notification -->
+        <div id="toast-notification">
+            <i class="fas fa-check-circle"></i>
+            <span id="toast-msg">Settings saved!</span>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <div class="loading-text" id="loading-text">Processing...</div>
+            </div>
+        </div>
+
+        <!-- Onboarding Card -->
+        <div class="onboarding-card">
+            <!-- Header -->
+            <div class="onboarding-header">
+                <div class="onboarding-icon"><i class="fas fa-hand-sparkles"></i></div>
+                <h2 id="onboarding-username">Welcome, User!</h2>
+                <p>Let's personalize your weather experience in just a few seconds.</p>
+            </div>
+
+            <!-- Body -->
+            <div class="onboarding-body">
+                <!-- Question 1: Location -->
+                <div class="onboarding-field">
+                    <label>Where are you located?</label>
+                    <div class="onboarding-search-container">
+                        <div class="onboarding-search">
+                            <i class="fas fa-magnifying-glass"></i>
+                            <input type="text" id="onboarding-city-input" placeholder="Search your city...">
+                        </div>
+                        <!-- Search Dropdown -->
+                        <div class="onboarding-search-dropdown" id="onboarding-search-dropdown"></div>
+                    </div>
+                    <!-- GPS Location Button -->
+                    <div class="gps-location-btn" id="btn-gps-location">
+                        <i class="fas fa-location-crosshairs"></i>
+                        <span>Use my current location</span>
+                    </div>
+                </div>
+
+                <!-- Question 2 & 3: Options Row -->
+                <div class="onboarding-options-row">
+                    <!-- Temperature -->
+                    <div class="onboarding-field">
+                        <label>Temperature</label>
+                        <div class="segmented-control" id="onboarding-temp-control">
+                            <div class="seg-option active" data-value="C">°C</div>
+                            <div class="seg-option" data-value="F">°F</div>
+                        </div>
+                    </div>
+
+                    <!-- Language -->
+                    <div class="onboarding-field">
+                        <label>Language</label>
+                        <div class="segmented-control" id="onboarding-lang-control">
+                            <div class="seg-option active" data-value="en">EN</div>
+                            <div class="seg-option" data-value="vi">VI</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="onboarding-footer">
+                <button class="btn-onboarding" id="btn-get-started">
+                    Get Started <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/onboarding.js"></script>
+</body>
+</html>
+

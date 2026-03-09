@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Weather & Planner</title>
+    <link rel="icon" type="image/png" href="./assets/icons/favicon.png">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#4facfe">
+    
+    <!-- Apple iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI Weather">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="./assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="./assets/icons/icon-512x512.png">
+    
+    <!-- iOS Splash Screen (Optional - for better experience) -->
+    <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="./assets/icons/icon-512x512.png">
+    <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" href="./assets/icons/icon-512x512.png">
+    <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="./assets/icons/icon-512x512.png">
+    
+    <!-- PWA Install Button Styles -->
+    <style>
+        #btn-install-app {
+            display: none;
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            align-items: center;
+            gap: 10px;
+        }
+        #btn-install-app:hover {
+            transform: translateX(-50%) translateY(-3px);
+            box-shadow: 0 12px 35px rgba(79, 172, 254, 0.5);
+        }
+        #btn-install-app:active {
+            transform: translateX(-50%) translateY(0);
+        }
+        #btn-install-app i {
+            font-size: 18px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <link rel="stylesheet" href="./css/style.css">
+    
+    <!-- Auth Check - Protected Route -->
+    <script src="./js/auth-check.js"></script>
+</head>
+<body>
+
+    <div id="toast-notification" class="glass-panel-light" style="position: fixed; bottom: -100px; right: 20px; padding: 12px 24px; border-radius: 50px; z-index: 10000; font-size: 14px; font-weight: 600; color: #0088ff; background: rgba(255,255,255,0.9); transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-check-circle"></i> <span id="toast-msg">Settings saved!</span>
+    </div>
+
+    <div class="app-bg">
+        <div class="dashboard-container">
+            
+            <aside class="sidebar glass-panel">
+                <div class="sidebar-logo"><i class="fa-brands fa-space-awesome"></i></div>
+                <nav class="sidebar-menu">
+                    <a href="#" class="menu-item active"><i class="fas fa-cloud-sun"></i><span data-i18n="nav_weather">Weather</span></a>
+                    <a href="#" class="menu-item"><i class="fas fa-globe-americas"></i><span data-i18n="nav_map">Satellite Map</span></a>
+                    <a href="#" class="menu-item"><i class="fas fa-chart-simple"></i><span data-i18n="nav_stats">Statistics</span></a>
+                    <a href="#" class="menu-item"><i class="fas fa-calendar-days"></i><span data-i18n="nav_planner">Planner</span></a>
+                    <a href="#" class="menu-item"><i class="fas fa-gear"></i><span data-i18n="nav_settings">Settings</span></a>
+                </nav>
+                <div class="sidebar-bottom">
+                    <span class="theme-text" data-i18n="theme_text" style="font-size: 10px; color: var(--text-muted); margin-bottom: 5px; display: block; text-align: center;">Light/Dark</span>
+                    <div class="theme-toggle">
+                        <div class="toggle-pill glass-panel">
+                            <i class="fas fa-sun"></i>
+                            <i class="fas fa-moon active-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="main-weather" id="main-weather-section">
+                <div class="search-section">
+                    <div class="search-bar glass-panel">
+                        <input type="text" id="search-input" data-i18n-placeholder="search_placeholder" placeholder="Search for weather...">
+                        <i class="fa-solid fa-location-crosshairs" id="btn-gps-locate" style="cursor: pointer; font-size: 16px; color: #0088ff; margin-left: 10px; transition: color 0.3s;" title="Get current location"></i>
+                        <div class="search-btn glass-panel"><i class="fas fa-magnifying-glass"></i></div>
+                    </div>
+                    <div class="search-dropdown glass-panel"></div>
+                </div>
+
+                <div class="main-card glass-panel">
+                    <div class="main-card-visual"><i class="fas fa-cloud-bolt text-cloud-3d"></i></div>
+                    <div class="temp-display"><h1 class="gradient-text" id="current-temp">--°C</h1></div>
+                    
+                    <div class="sub-widgets-container">
+                        <div class="sub-widget glass-darker">
+                            <div class="widget-header"><i class="fas fa-temperature-half"></i><span data-i18n="feels_like">Feels Like</span></div>
+                            <div class="widget-value" id="feels-like">--°</div>
+                            <div class="widget-gauge">
+                                <svg viewBox="0 0 100 50" class="arc-svg">
+                                    <defs><linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4facfe" /><stop offset="100%" stop-color="#f093fb" /></linearGradient></defs>
+                                    <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8" stroke-linecap="round"/>
+                                    <path d="M 10 50 A 40 40 0 0 1 60 15" fill="none" stroke="url(#arcGrad)" stroke-width="8" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="sub-widget glass-darker">
+                            <div class="widget-header"><i class="fas fa-droplet"></i><span data-i18n="humidity">Humidity</span></div>
+                            <div class="widget-value" id="humidity">--%</div>
+                            <div class="progress-bar-wrap"><div class="progress-fill fill-blue" style="width: 65%;"></div></div>
+                        </div>
+                        <div class="sub-widget glass-darker">
+                            <div class="widget-header"><i class="fas fa-gauge-high"></i><span data-i18n="pressure">Pressure</span></div>
+                            <div class="widget-value" id="pressure">-- <small>hPa</small></div>
+                            <div class="progress-bar-wrap"><div class="progress-fill fill-white" style="width: 50%;"></div></div>
+                        </div>
+                        <div class="sub-widget glass-darker">
+                            <div class="widget-header"><i class="fas fa-sun"></i><span data-i18n="uv_index">UV Index</span></div>
+                            <div class="widget-value" id="uv-index">--</div>
+                            <div class="progress-bar-wrap"><div class="progress-fill fill-gradient" style="width: 80%;"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <aside class="right-widgets" id="right-widgets-section">
+                <div class="right-panel glass-panel temp-chart-panel">
+                    <div class="panel-header"><span data-i18n="temperature">Temperature</span><span class="header-note"><span class="dot-yellow"></span> <span data-i18n="next_24h">Next 24 hours</span></span></div>
+                    <div class="chart-container">
+                        <svg viewBox="0 0 300 100" class="line-chart">
+                            <defs>
+                                <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4facfe" /><stop offset="100%" stop-color="#f6d365" /></linearGradient>
+                                <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="rgba(79, 172, 254, 0.4)" /><stop offset="100%" stop-color="rgba(79, 172, 254, 0)" /></linearGradient>
+                            </defs>
+                            <path id="chart-area" d="" fill="url(#areaGrad)" />
+                            <path id="chart-line" d="" fill="none" stroke="url(#lineGrad)" stroke-width="3" stroke-linecap="round"/>
+                            <circle id="chart-dot" cx="150" cy="50" r="0" fill="#ffffff" filter="drop-shadow(0 0 6px #ffffff)"></circle>
+                        </svg>
+                        <div class="chart-x-axis"><span>00</span><span>04</span><span>08</span><span>12</span><span>16</span><span>20</span><span>24</span></div>
+                    </div>
+                </div>
+
+                <div class="right-panel glass-panel forecast-panel">
+                    <div class="panel-header"><span data-i18n="daily_forecast">Daily Forecast</span><i class="fas fa-chevron-up text-muted"></i></div>
+                    <div class="forecast-list"></div>
+                </div>
+
+                <div class="right-panel glass-panel radar-panel">
+                    <div class="panel-header absolute-header" style="position: absolute; top: 0; left: 0; width: 100%; z-index: 1000; padding: 20px; pointer-events: none;">
+                        <span style="pointer-events: auto;" data-i18n="mini_radar">Mini Radar</span>
+                    </div>
+                    <div id="mini-map" style="width: 100%; height: 100%; border-radius: var(--radius-lg);"></div>
+                </div>
+            </aside>
+
+            <div id="satellite-view" class="glass-panel" style="display: none; grid-column: 2 / 4; width: 100%; height: 100%; position: relative; overflow: hidden; padding: 0; border-radius: var(--radius-lg);">
+                <div id="large-map" style="width: 100%; height: 100%; z-index: 1; background: #0f172a;"></div>
+                <div style="position: absolute; top: 20px; right: 20px; z-index: 1001; color: var(--text-muted); font-size: 14px;">
+                    <span id="map-location-name">--</span>
+                </div>
+                <div class="map-legend glass-panel" style="z-index: 1000; background: rgba(15, 23, 42, 0.9);">
+                    <h3 style="margin-bottom: 15px; font-size: 15px; font-weight: 600; text-transform: uppercase; color: #fff;" data-i18n="map_legend">Map Legend</h3>
+                    <div class="legend-item" style="color: #fff;"><span class="legend-dot"></span><span data-i18n="current_location">Current Location</span></div>
+                    <div style="margin-top: 15px; font-size: 12px; color: var(--text-muted);" data-i18n="map_desc">Rain (Yellow/Red) & Clouds (White) Intensity:</div>
+                    <div class="legend-bar"></div>
+                    <div class="legend-labels"><span data-i18n="map_light">Light</span><span data-i18n="map_mod">Moderate</span><span data-i18n="map_heavy">Heavy / Storm</span></div>
+                </div>
+            </div>
+
+            <div id="statistics-view" style="display: none; grid-column: 2 / 4; width: 100%; height: 100%; flex-direction: column; gap: 24px; position: relative;">
+                <header class="stat-premium-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px;">
+                    <div class="header-left" style="display: flex; align-items: center; gap: 15px;">
+                        <h2 class="title-main" style="font-size: 24px; font-weight: 700; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.2);" data-i18n="deep_analysis">Deep Analysis / Statistics</h2>
+                        <button id="open-stat-info" class="glass-panel-light" style="border: 1px solid rgba(255,255,255,0.8); padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; color: #fff; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: 0.3s;"><i class="fas fa-circle-info"></i> <span data-i18n="guide_btn">Guide</span></button>
+                        <div style="position: relative; margin-left: 10px;">
+                            <div class="glass-panel-light" style="padding: 6px 15px; border-radius: 20px; display: flex; align-items: center; gap: 10px; width: 220px;">
+                                <i class="fas fa-magnifying-glass" style="opacity: 0.8;"></i>
+                                <input type="text" id="stat-search-input" data-i18n-placeholder="search_city" placeholder="Search city..." style="background: transparent; border: none; outline: none; color: #fff; width: 100%; font-family: 'Inter', sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">
+                            </div>
+                            <div id="stat-search-dropdown" class="search-dropdown glass-panel" style="top: 40px; background: rgba(255,255,255,0.85); border-radius: 12px;"></div>
+                        </div>
+                    </div>
+                    <div class="header-right" style="text-align: right; font-size: 14px; font-weight: 500; text-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                        <div><i class="fas fa-location-dot"></i> <span id="stat-city-name">--</span> <i class="fas fa-circle-user" style="font-size: 20px; margin-left: 10px; opacity: 0.8;"></i></div>
+                        <div id="last-updated-time" style="font-size: 11px; opacity: 0.8; font-weight: 400; margin-top: 4px;">Last Updated: --</div>
+                    </div>
+                </header>
+
+                <div class="stats-premium-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; height: 42%;">
+                    <div class="stat-card-premium glass-panel-light" style="padding: 20px; position: relative;">
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; opacity: 0.9;">
+                            <span data-i18n="aqi_title">Air Quality Index</span>
+                            <span style="font-size: 11px; opacity: 0.8;"><i class="fas fa-circle" style="font-size: 8px;"></i> Multi-parameter AQI</span>
+                        </div>
+                        <div class="chart-safe-wrapper" style="height: calc(100% - 20px); position: relative; margin-top: 10px;">
+                            <canvas id="aqiChart"></canvas>
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
+                                <div id="aqi-status" style="font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #fb923c; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">--</div>
+                                <div id="aqi-value" style="font-size: 38px; font-weight: 800; color: #fb923c; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.2);">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card-premium glass-panel-light" style="padding: 20px; position: relative;">
+                        <div style="font-size: 14px; font-weight: 600; opacity: 0.9;" data-i18n="sun_path">Sun Path & Astro</div>
+                        <div class="chart-safe-wrapper" style="height: calc(100% - 40px); position: relative; margin-top: 10px;">
+                            <canvas id="sunChart"></canvas>
+                            <div style="position: absolute; bottom: 0; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 10px; text-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                                <div><div style="font-size: 11px; opacity: 0.8;" data-i18n="sunrise">Sunrise</div><div id="stat-sunrise" style="font-weight: 600; font-size: 14px;">--:--</div></div>
+                                <div style="text-align: center;">
+                                    <div id="stat-current-time" style="font-size: 26px; font-weight: 700; line-height: 1;">--:--</div>
+                                    <div style="font-size: 11px; opacity: 0.8; margin-top: 5px;" data-i18n="daylight">Daylight Duration</div>
+                                    <div id="stat-daylight-sub" style="font-weight: 600; font-size: 12px; opacity: 0.9;">-- hr -- min</div>
+                                </div>
+                                <div style="text-align: right;"><div style="font-size: 11px; opacity: 0.8;" data-i18n="sunset">Sunset</div><div id="stat-sunset" style="font-weight: 600; font-size: 14px;">--:--</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card-premium glass-panel-light full-width-premium" style="padding: 20px; height: calc(58% - 24px); display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; opacity: 0.9; margin-bottom: 10px;">
+                        <span data-i18n="7day_trend">7-Day Trend</span>
+                        <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 500;">
+                            <span style="display: flex; align-items: center; gap: 5px;"><div style="width: 12px; height: 12px; background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.5); border-radius: 2px;"></div> <span data-i18n="rain_chance">Rain Chance</span></span>
+                            <span style="display: flex; align-items: center; gap: 5px;"><div style="width: 15px; height: 3px; background: #FFB380;"></div> Max</span>
+                            <span style="display: flex; align-items: center; gap: 5px;"><div style="width: 15px; height: 3px; background: #80FFFF;"></div> Min</span>
+                        </div>
+                    </div>
+                    <div class="chart-safe-wrapper" style="flex-grow: 1;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="planner-view" style="display: none; grid-column: 2 / 4; width: 100%; height: 100%; flex-direction: column; gap: 20px;">
+                <header class="planner-navbar glass-panel-light">
+                    <div class="nav-icons"><div class="icon-square-light" id="nav-btn-menu" title="All Notes"><i class="fas fa-bars"></i></div></div>
+                    <div class="nav-pills-light">
+                        <span class="nav-item-light" id="nav-link-home" title="Yearly View" data-i18n="home">Home</span>
+                        <span class="nav-item-light active" data-i18n="cal_planner">Calendar & Planner</span>
+                        <span class="nav-item-light" id="nav-link-about" data-i18n="about">About</span>
+                    </div>
+                    <div class="nav-icons" style="display: flex; gap: 10px;">
+                        <div class="icon-square-light" id="nav-btn-map" title="Satellite Map"><i class="fas fa-map"></i></div>
+                        <div class="icon-square-light" id="nav-btn-bell" title="Notifications" style="position: relative;">
+                            <i class="fas fa-bell"></i>
+                            <div id="bell-badge" class="notification-badge" style="display: none;"></div>
+                        </div>
+                        <div class="icon-square-light" id="nav-btn-info" title="Planner Guide"><i class="fas fa-circle-info"></i></div>
+                    </div>
+                </header>
+
+                <div class="planner-main-grid-light">
+                    <section class="calendar-container-light">
+                        <div class="calendar-header-light">
+                            <h2 id="current-month-name-light">Month Year</h2>
+                            <div class="calendar-nav-light">
+                                <button id="prev-month-btn" class="nav-btn-light glass-panel-light"><i class="fas fa-chevron-left"></i></button>
+                                <button id="next-month-btn" class="nav-btn-light glass-panel-light"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        
+                        <div class="calendar-grid-header-light">
+                            <div class="dow-block glass-panel-light" data-i18n="sun">SUN</div>
+                            <div class="dow-block glass-panel-light" data-i18n="mon">MON</div>
+                            <div class="dow-block glass-panel-light" data-i18n="tue">TUE</div>
+                            <div class="dow-block glass-panel-light" data-i18n="wed">WED</div>
+                            <div class="dow-block glass-panel-light" data-i18n="thu">THU</div>
+                            <div class="dow-block glass-panel-light" data-i18n="fri">FRI</div>
+                            <div class="dow-block glass-panel-light" data-i18n="sat">SAT</div>
+                        </div>
+                        
+                        <div id="calendar-days-light" class="calendar-days-grid-light"></div>
+                    </section>
+
+                    <aside class="details-container-light">
+                        <div class="right-block-light glass-panel-light">
+                            <div class="block-label-light" data-i18n="selected_date">Selected Date:</div>
+                            <div class="block-value-light" id="selected-date-label-light">--</div>
+                        </div>
+                        <div class="right-block-light glass-panel-light">
+                            <div class="block-label-light" data-i18n="weather_summary">Weather Summary:</div>
+                            <div class="block-value-weather">
+                                <span id="day-weather-desc-light" data-i18n="select_date_prompt">Select a date</span>
+                                <i id="day-weather-icon-light" class="fas fa-cloud"></i>
+                            </div>
+                        </div>
+                        <div class="right-block-light glass-panel-light plan-block">
+                            <div class="block-label-light" style="margin-bottom: 20px;" data-i18n="todays_plan">Today's Plan:</div>
+                            <div class="notepad-content-light" id="task-list-container"></div>
+                            <div class="add-task-light">
+                                <input type="text" id="new-task-input" data-i18n-placeholder="add_task_ph" placeholder="Add new task and press Enter...">
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div> 
+
+            <div id="settings-view" style="display: none; grid-column: 2 / 4; width: 100%; height: 100%; flex-direction: column; gap: 24px; color: #1E293B;">
+                
+                <header style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px;">
+                    <div>
+                        <h2 style="font-size: 26px; font-weight: 800; margin: 0; color: #0f172a;" data-i18n="settings_title">Settings</h2>
+                        <p style="font-size: 14px; font-weight: 500; opacity: 0.7; margin-top: 2px;" data-i18n="settings_sub">Premium Weather & Planner</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div id="settings-bell-btn" class="glass-panel-light" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
+                            <i class="fas fa-bell" style="opacity: 0.7;"></i>
+                            <div class="notification-badge" style="top: 0; right: 0;"></div>
+                        </div>
+                        
+                        <!-- User Menu Container -->
+                        <div id="user-menu-container" style="display: flex; align-items: center; gap: 8px; padding-left: 10px; cursor: pointer; position: relative;">
+                            <img id="header-avatar" src="https://ui-avatars.com/api/?name=TK&background=4facfe&color=fff" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 10px rgba(79, 172, 254, 0.4); object-fit: cover;">
+                            <i class="fas fa-chevron-down" style="font-size: 12px; opacity: 0.5;"></i>
+                        </div>
+                        
+                        <!-- User Dropdown Menu -->
+                        <div id="user-dropdown" class="glass-panel-light" style="position: absolute; top: 60px; right: 10px; width: 280px; background: rgba(255,255,255,0.95); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 10000; display: none; overflow: hidden;">
+                            <div id="dropdown-accounts-list" style="max-height: 250px; overflow-y: auto; padding: 8px 0;"></div>
+                            <div style="border-top: 1px solid rgba(0,0,0,0.1); padding: 8px;">
+                                <button id="btn-add-account" style="width: 100%; padding: 12px; background: transparent; border: none; color: #0088ff; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 8px; transition: 0.2s;">
+                                    <i class="fas fa-plus-circle"></i> Thêm tài khoản
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div style="display: grid; grid-template-columns: 4fr 6fr; gap: 24px; height: calc(100% - 60px);">
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        <div class="glass-panel-light" style="padding: 30px 25px; border-radius: 20px; background: rgba(255,255,255,0.6);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                                <h3 style="font-size: 18px; font-weight: 700;" data-i18n="acc_settings">Account Settings</h3>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 20px;">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                    <img id="profile-avatar" src="https://ui-avatars.com/api/?name=TK&background=e0c3fc&color=fff" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.8); box-shadow: 0 8px 20px rgba(0,0,0,0.1); object-fit: cover;">
+                                    <span style="background: linear-gradient(90deg, #4facfe, #00f2fe); color: white; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Premium</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden;">
+                                    <h4 id="display-name" style="font-size: 20px; font-weight: 800; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tran Hoang Khiem</h4>
+                                    <p id="display-email" style="font-size: 13px; opacity: 0.7; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fas fa-envelope"></i> khiem.th@namcantho.edu.vn</p>
+                                    <p style="font-size: 12px; opacity: 0.5; margin: 0; margin-top: 4px;" data-i18n="member_since">Member Since: Nov 2025</p>
+                                    <span id="open-edit-profile" style="color: #0088ff; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; display: inline-block;"><span data-i18n="manage_profile">Manage Profile</span> <i class="fas fa-arrow-right" style="font-size: 10px;"></i></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel-light" style="padding: 25px; border-radius: 20px; background: rgba(255,255,255,0.6); flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 15px;" data-i18n="subscription">Subscription</h3>
+                                <div style="background: rgba(79, 172, 254, 0.1); border-left: 4px solid #4facfe; padding: 15px; border-radius: 8px;">
+                                    <p style="font-size: 15px; font-weight: 700; color: #0369a1; margin: 0;" data-i18n="plan_name">Premium Annual Plan</p>
+                                    <p style="font-size: 13px; opacity: 0.7; margin: 5px 0 0 0;" data-i18n="expires">Expires: Nov 15, 2026</p>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                                <button id="btn-logout" class="glass-panel-light" style="border: 1px solid rgba(255,71,87,0.3); background: rgba(255,71,87,0.05); padding: 10px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; color: #ff4757; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s; box-shadow: 0 8px 20px rgba(255, 71, 87, 0.15);">
+                                    <i class="fas fa-arrow-right-from-bracket"></i> <span data-i18n="logout">Log Out</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel-light" style="padding: 30px 40px; border-radius: 20px; background: rgba(255,255,255,0.6); overflow-y: auto;">
+                        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 30px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 15px;" data-i18n="app_prefs">Application Preferences</h3>
+                        <div style="display: flex; flex-direction: column; gap: 30px;">
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4 style="font-size: 15px; font-weight: 600; margin: 0;" data-i18n="lang_title">Interface Language</h4>
+                                    <p style="font-size: 12px; opacity: 0.6; margin: 4px 0 0 0;" data-i18n="lang_desc">Select your preferred language.</p>
+                                </div>
+                                <select id="language-select" class="glass-panel-light custom-select">
+                                    <option value="en">🇺🇸 English (US)</option>
+                                    <option value="vi">🇻🇳 Tiếng Việt</option>
+                                </select>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4 style="font-size: 15px; font-weight: 600; margin: 0;" data-i18n="temp_title">Temperature Unit</h4>
+                                    <p style="font-size: 12px; opacity: 0.6; margin: 4px 0 0 0;" data-i18n="temp_desc">Affects all weather displays.</p>
+                                </div>
+                                <div class="segmented-control glass-panel-light" style="display: flex; padding: 4px; border-radius: 50px; background: rgba(0,0,0,0.05);">
+                                    <div id="btn-temp-c" class="seg-item active">°C</div>
+                                    <div id="btn-temp-f" class="seg-item">°F</div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4 style="font-size: 15px; font-weight: 600; margin: 0;" data-i18n="time_title">Time Format</h4>
+                                    <p style="font-size: 12px; opacity: 0.6; margin: 4px 0 0 0;" data-i18n="time_desc">12-hour (AM/PM) or 24-hour clock.</p>
+                                </div>
+                                <div class="segmented-control glass-panel-light" style="display: flex; padding: 4px; border-radius: 50px; background: rgba(0,0,0,0.05);">
+                                    <div id="btn-time-12" class="seg-item active">12h</div>
+                                    <div id="btn-time-24" class="seg-item">24h</div>
+                                </div>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px dashed rgba(0,0,0,0.1); margin: 10px 0;">
+
+                            <div>
+                                <h4 style="font-size: 16px; font-weight: 700; margin: 0 0 20px 0;"><i class="fas fa-bell" style="color: #ff4757; margin-right: 8px;"></i> <span data-i18n="notif_title">Push Notifications</span></h4>
+                                <div style="display: flex; flex-direction: column; gap: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-size: 14px; font-weight: 500;" data-i18n="notif_severe">Severe Weather Alerts</span>
+                                        <div class="ios-toggle setting-toggle"></div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-size: 14px; font-weight: 500;" data-i18n="notif_daily">Daily Morning Forecast</span>
+                                        <div class="ios-toggle setting-toggle"></div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-size: 14px; font-weight: 500;" data-i18n="notif_planner">Planner Task Reminders</span>
+                                        <div class="ios-toggle setting-toggle"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="edit-profile-modal" class="modal-overlay">
+                <div class="modal-box glass-panel-light" style="background: rgba(255,255,255,0.95); color: #333; max-width: 400px; text-shadow: none;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0,0,0,0.1);">
+                        <h3 style="color: #0088ff; font-size: 18px;"><i class="fas fa-user-edit"></i> <span data-i18n="edit_profile">Edit Profile</span></h3>
+                        <button class="btn-close-modal close-custom-modal" style="color: #333;"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-content" style="display: flex; flex-direction: column; gap: 15px;">
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <label for="avatar-upload" style="cursor: pointer; position: relative; display: inline-block;">
+                                <img id="preview-avatar" src="https://ui-avatars.com/api/?name=TK&background=e0c3fc&color=fff" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid #0088ff; object-fit: cover;">
+                                <div style="position: absolute; bottom: 0; right: 0; background: #0088ff; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);"><i class="fas fa-camera"></i></div>
+                            </label>
+                            <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; font-weight: 600; opacity: 0.7; margin-bottom: 5px; display: block;" data-i18n="full_name">Full Name</label>
+                            <input type="text" id="edit-name-input" value="Tran Hoang Khiem" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.2); outline: none; font-family: 'Inter', sans-serif; font-size: 14px; background: rgba(255,255,255,0.5);">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; font-weight: 600; opacity: 0.7; margin-bottom: 5px; display: block;" data-i18n="email_address">Email Address</label>
+                            <input type="email" id="edit-email-input" value="khiem.th@namcantho.edu.vn" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.2); outline: none; font-family: 'Inter', sans-serif; font-size: 14px; background: rgba(255,255,255,0.5);">
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                            <button id="cancel-profile-btn" style="padding: 8px 18px; border-radius: 8px; border: none; background: rgba(0,0,0,0.1); cursor: pointer; font-weight: 600; color: #333; transition: 0.2s;" data-i18n="cancel">Cancel</button>
+                            <button id="save-profile-btn" style="padding: 8px 18px; border-radius: 8px; border: none; background: #0088ff; color: white; cursor: pointer; font-weight: 600; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,136,255,0.3);" data-i18n="save">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="login-history-modal" class="modal-overlay">
+                <div class="modal-box glass-panel-light" style="background: rgba(255,255,255,0.95); color: #333; text-shadow: none; max-width: 500px;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0,0,0,0.1);">
+                        <h3 style="color: #ff4757; font-size: 18px;"><i class="fas fa-shield-halved"></i> <span data-i18n="security_login_history">Security & Login History</span></h3>
+                        <button class="btn-close-modal close-custom-modal" style="color: #333;"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-content" style="color: #444;">
+                        <p style="font-size: 13px; opacity: 0.7; margin-bottom: 15px;">Recent activity for account: <b>Tran Hoang Khiem</b></p>
+                        
+                        <div style="border-left: 2px solid #4facfe; padding-left: 15px; margin-bottom: 20px; position: relative;">
+                            <div style="position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #4facfe; box-shadow: 0 0 5px #4facfe;"></div>
+                            <h4 style="margin: 0; font-size: 14px; color: #0f172a;">MacBook Pro - Chrome (Current)</h4>
+                            <p style="margin: 3px 0 0 0; font-size: 12px; opacity: 0.8;"><i class="fas fa-location-dot" style="color: #ff4757;"></i> Can Tho, Vietnam (IP: 14.161.42.11)</p>
+                            <p style="margin: 3px 0 0 0; font-size: 12px; color: #4facfe; font-weight: 600;">March 4, 2026 - Active Now</p>
+                        </div>
+
+                        <div style="border-left: 2px solid rgba(0,0,0,0.1); padding-left: 15px; margin-bottom: 20px; position: relative;">
+                            <div style="position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #ccc;"></div>
+                            <h4 style="margin: 0; font-size: 14px; color: #0f172a;">iPhone 14 - Safari</h4>
+                            <p style="margin: 3px 0 0 0; font-size: 12px; opacity: 0.8;"><i class="fas fa-location-dot"></i> Ho Chi Minh City, Vietnam (IP: 113.160.12.8)</p>
+                            <p style="margin: 3px 0 0 0; font-size: 12px; opacity: 0.6;">March 2, 2026 - 14:30 PM</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="edit-task-modal" class="modal-overlay">
+                <div class="modal-box glass-panel-light" style="background: rgba(255,255,255,0.95); color: #333; max-width: 400px; text-shadow: none;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0,0,0,0.1);">
+                        <h3 style="color: #0088ff; font-size: 18px;"><i class="fas fa-pen"></i> <span data-i18n="edit_task">Edit Task</span></h3>
+                        <button class="btn-close-modal close-custom-modal" style="color: #333;"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-content">
+                        <input type="text" id="edit-task-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.2); outline: none; margin-bottom: 20px; font-family: 'Inter', sans-serif; font-size: 14px; background: rgba(255,255,255,0.5);">
+                        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                            <button id="cancel-edit-btn" style="padding: 8px 18px; border-radius: 8px; border: none; background: rgba(0,0,0,0.1); cursor: pointer; font-weight: 600; color: #333; transition: 0.2s;" data-i18n="cancel">Cancel</button>
+                            <button id="save-edit-btn" style="padding: 8px 18px; border-radius: 8px; border: none; background: #0088ff; color: white; cursor: pointer; font-weight: 600; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,136,255,0.3);" data-i18n="save">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="delete-task-modal" class="modal-overlay">
+                <div class="modal-box glass-panel-light" style="background: rgba(255,255,255,0.95); color: #333; max-width: 400px; text-shadow: none;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0,0,0,0.1);">
+                        <h3 style="color: #ff4757; font-size: 18px;"><i class="fas fa-trash"></i> <span data-i18n="delete_task">Delete Task</span></h3>
+                        <button class="btn-close-modal close-custom-modal" style="color: #333;"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-content">
+                        <p style="margin-bottom: 20px; font-size: 14px;" data-i18n="delete_confirm">Are you sure you want to delete this task? This action cannot be undone.</p>
+                        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                            <button id="cancel-delete-btn" style="padding: 8px 18px; border-radius: 8px; border: none; background: rgba(0,0,0,0.1); cursor: pointer; font-weight: 600; color: #333; transition: 0.2s;" data-i18n="cancel">Cancel</button>
+                            <button id="confirm-delete-btn" style="padding: 8px 18px; border-radius: 8px; border: none; background: #ff4757; color: white; cursor: pointer; font-weight: 600; transition: 0.2s; box-shadow: 0 4px 10px rgba(255,71,87,0.3);" data-i18n="delete">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="all-tasks-modal" class="modal-overlay">
+                <div class="modal-box glass-panel-light" style="background: rgba(255,255,255,0.95); color: #333; text-shadow: none; max-width: 600px;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0,0,0,0.1);">
+                        <h3 style="color: #0088ff; font-size: 18px;"><i class="fas fa-list-check"></i> <span data-i18n="planner_tasks">Planner Tasks</span></h3>
+                        <button class="btn-close-modal close-custom-modal" style="color: #333;"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-content" id="all-tasks-content" style="color: #444;"></div>
+                </div>
+            </div>
+
+            <div id="yearly-calendar-modal" class="modal-overlay">
+                <div class="modal-box glass-panel" style="background: rgba(15, 23, 42, 0.95); color: #fff; max-width: 900px; width: 95%;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <h3 style="color: #fff; font-size: 22px; font-weight: 300;" id="yearly-title"><span data-i18n="yearly_calendar">2026</span></h3>
+                        <button class="btn-close-modal close-custom-modal" style="color: #fff;"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-content" id="yearly-calendar-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-height: 70vh;"></div>
+                </div>
+            </div>
+
+            <div id="about-modal" class="modal-overlay">
+                <div class="modal-box glass-panel-light" style="background: rgba(255,255,255,0.95); color: #333; text-shadow: none; text-align: center; max-width: 400px;">
+                    <div class="modal-header" style="border-bottom: none; justify-content: center; position: relative;">
+                        <h3 style="color: #0088ff; font-size: 20px; font-weight: 700;"><i class="fa-brands fa-space-awesome"></i> <span data-i18n="about_premium_weather">Premium Weather</span></h3>
+                        <button class="btn-close-modal close-custom-modal" style="color: #333; position: absolute; right: 0; top: -5px;"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-content" style="font-size: 14px; line-height: 1.6; padding-top: 0;">
+                        <p data-i18n="about_version" style="opacity: 0.7; margin-bottom: 20px;">Version 1.0.0</p>
+                        <div data-i18n="about_description" style="background: rgba(0,136,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: left; border-left: 4px solid #0088ff;">
+                            <p data-i18n="about_developer" style="margin: 0 0 5px 0; color: #0088ff; font-weight: 600; font-size: 15px;">Developed by: Tran Hoang Khiem</p>
+                            <p data-i18n="about_university" style="margin: 0; font-size: 13px; opacity: 0.8;"><i class="fas fa-graduation-cap"></i> Nam Can Tho University</p>
+                        </div>
+                        <p data-i18n="about_description_final" style="font-size: 13px; opacity: 0.7; font-style: italic;">A complete solution combining Real-time Weather API, Advanced Data Visualization, and Personal Planner State Management.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="notification-modal" class="modal-overlay">
+                <div class="modal-box glass-panel-light" style="background: rgba(255,255,255,0.95); color: #333; text-shadow: none; max-width: 400px;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0,0,0,0.1);">
+                        <h3 style="color: #ff4757; font-size: 18px;"><i class="fas fa-bell"></i> <span data-i18n="notifications">Notifications</span></h3>
+                        <button class="btn-close-modal close-custom-modal" style="color: #333;"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-content" id="notification-content" style="font-size: 15px; font-weight: 500; line-height: 1.6;"></div>
+                </div>
+            </div>
+
+            <div id="info-modal" class="modal-overlay">
+                <div class="modal-box glass-panel-light" style="background: rgba(255,255,255,0.95); color: #333; text-shadow: none; max-width: 450px;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0,0,0,0.1);">
+                        <h3 style="color: #0088ff; font-size: 18px;"><i class="fas fa-circle-info"></i> <span data-i18n="planner_guide">Planner Guide</span></h3>
+                        <button class="btn-close-modal close-custom-modal" style="color: #333;"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-content" style="font-size: 14px; line-height: 1.6;">
+                        <p data-i18n="planner_guide_1"><b>1. View Weather:</b> Click on any date in the calendar to see the forecast for that specific day.</p>
+                        <p data-i18n="planner_guide_2"><b>2. Add Tasks:</b> Type a task in the "Add new task..." box and press ENTER to save it.</p>
+                        <p data-i18n="planner_guide_3"><b>3. Manage Tasks:</b> Check off completed tasks. Hover over a task to <b>Edit</b> or <b>Delete</b> it.</p>
+                        <p data-i18n="planner_guide_4"><b>4. Smart Alerts:</b> The bell icon will display a red dot if you have tasks scheduled for tomorrow.</p>
+                        <p data-i18n="planner_guide_5"><b>5. Quick Navigation:</b> Click 'Home' to view the yearly calendar and jump directly to any month.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="stat-info-modal" class="modal-overlay">
+                <div class="modal-box glass-panel-light" style="background: rgba(255,255,255,0.95); color: #333; text-shadow: none; max-width: 450px;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0,0,0,0.1);">
+                        <h3 style="color: #0088ff; font-size: 18px;"><i class="fas fa-chart-pie"></i> <span data-i18n="chart_guide">Chart Guide</span></h3>
+                        <button class="btn-close-modal close-custom-modal" style="color: #333;"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-content" style="color: #444;">
+                        <div class="info-section">
+                            <h4 style="color: #333;"><i class="fas fa-leaf" style="color: #ff00ff;"></i> <span data-i18n="chart_aqi_title">Air Quality Index (AQI)</span></h4>
+                            <p data-i18n="chart_aqi_desc">The spider chart visualizes harmful pollutants in the air:</p>
+                            <ul>
+                                <li><b>PM2.5 & PM10:</b> <span data-i18n="chart_aqi_pm">Fine particulate matter.</span></li>
+                                <li><b>NO2, CO, SO2:</b> <span data-i18n="chart_aqi_gases">Factory and vehicle emissions.</span></li>
+                            </ul>
+                            <p class="highlight-text" style="background: rgba(0,136,255,0.1); border-left-color: #0088ff;" data-i18n="chart_aqi_tip">💡 Tip: The wider the inner shape spreads, the <b>more polluted</b> the air is.</p>
+                        </div>
+                        <div class="info-section">
+                            <h4 style="color: #333;"><i class="fas fa-sun" style="color: #facc15;"></i> <span data-i18n="chart_sun_title">Sun Path & Astro</span></h4>
+                            <ul><li data-i18n="chart_sun_desc">The glowing dot represents the real-time sun position based on the location's timezone.</li></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- OTP EMAIL MODAL - Glassmorphism -->
+            <!-- ========================================================= -->
+            <div id="otp-email-modal" class="otp-modal-overlay hidden">
+                <div class="otp-modal-box glass-panel">
+                    <div class="otp-modal-header">
+                        <div class="otp-icon-wrapper">
+                            <i class="fas fa-envelope-circle-check"></i>
+                        </div>
+                        <h3 class="otp-title">Xác thực Email Mới</h3>
+                        <p class="otp-subtitle">Vui lòng nhập mã OTP gồm 6 chữ số vừa được gửi đến <span id="otp-target-email" style="font-weight: 600; color: #4facfe;"></span></p>
+                    </div>
+                    <div class="otp-input-container">
+                        <input type="text" id="otp-input" maxlength="6" placeholder="------" autocomplete="off" inputmode="numeric">
+                    </div>
+                    <div class="otp-timer">
+                        <span id="otp-timer-text">Mã hết hạn sau: 5:00</span>
+                        <button id="otp-resend-btn" class="otp-resend-link" style="display: none;">Gửi lại mã</button>
+                    </div>
+                    <div class="otp-actions">
+                        <button id="otp-cancel-btn" class="glass-btn-cancel">Hủy</button>
+                        <button id="otp-confirm-btn" class="glass-btn-confirm">
+                            <span id="otp-btn-text">Xác nhận</span>
+                            <span id="otp-btn-loading" style="display: none;"><i class="fas fa-spinner fa-spin"></i></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- SYSTEM ANNOUNCEMENT MODAL - Glassmorphism Popup -->
+            <!-- ========================================================= -->
+            <div id="system-announcement-modal" class="system-modal-overlay">
+                <div class="system-modal-content glass-effect">
+                    <div class="system-announcement-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <h2 class="system-announcement-title gradient-text">Thông báo hệ thống</h2>
+                    <p id="system-announcement-message" class="system-announcement-message">
+                        Đang tải thông báo...
+                    </p>
+                    <div class="system-announcement-buttons">
+                        <button id="btn-close-announcement" class="btn-system-close">
+                            Đóng
+                        </button>
+                        <button id="btn-mute-8h" class="btn-system-mute">
+                            <i class="fas fa-clock"></i> Không hiện lại trong 8h
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="./js/profile.js"></script>
+    <script src="./js/main.js"></script>
+    <script src="./js/chatbot.js"></script>
+
+    <!-- ========================================================= -->
+    <!-- CHAT BOT - Floating Action Button -->
+    <!-- ========================================================= -->
+    <div class="chat-fab-container" id="chat-fab-container">
+        <div class="chat-fab-glow"></div>
+        <div class="chat-fab-glow"></div>
+        <div class="chat-fab-glow"></div>
+        <div class="chat-fab-glow"></div>
+        <button class="chat-fab" id="chat-fab" title="Chat với AI Assistant">
+            <i class="fas fa-comment-dots"></i>
+        </button>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- CHAT MODAL - Glassmorphism -->
+    <!-- ========================================================= -->
+    <div class="chat-modal-overlay" id="chat-modal-overlay">
+        <div class="chat-modal-container">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <div class="chat-header-title">
+                    <div class="chat-header-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="chat-header-text">
+                        <h3 data-i18n="ai_assistant">khiewcokk AI</h3>
+                        <p data-i18n="ai_online">Online</p>
+                    </div>
+                </div>
+                <div class="chat-header-actions">
+                    <button class="chat-trash-btn" id="chat-trash-btn" title="Xóa lịch sử chat">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="chat-close-btn" id="chat-close-btn" title="Đóng chat">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chat-messages">
+                <!-- Welcome Message -->
+                <div class="chat-welcome" id="chat-welcome">
+                    <i class="fas fa-robot"></i>
+                    <h4 data-i18n="welcome_chat">Chào bạn!</h4>
+                    <p data-i18n="welcome_chat_desc">Tôi có thể giúp gì cho bạn hôm nay?</p>
+                </div>
+            </div>
+
+<!-- Chat Footer -->
+            <div class="chat-footer">
+                <!-- Suggestion Chips -->
+                <div class="suggestion-chips">
+                    <button class="suggestion-chip">Nhiệt độ trung bình hôm nay?</button>
+                    <button class="suggestion-chip">UV hôm nay?</button>
+                    <button class="suggestion-chip">Hôm nay mấy giờ mưa?</button>
+                </div>
+                <div class="chat-input-row">
+                    <div class="chat-input-wrapper">
+                        <i class="fas fa-paper-plane"></i>
+                        <input type="text" class="chat-input" id="chat-input" data-i18n-placeholder="chat_placeholder" placeholder="Nhập tin nhắn...">
+                    </div>
+                    <button class="chat-send-btn" id="chat-send-btn" title="Gửi">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- PWA Install Button -->
+    <button id="btn-install-app">
+        <i class="fas fa-download"></i>
+        <span>Cài đặt App</span>
+    </button>
+
+    <!-- PWA Install Script -->
+    <script src="./js/pwa-install.js"></script>
+
+</body>
+</html>

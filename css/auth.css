@@ -1,0 +1,373 @@
+/* ============================================
+   AUTH PAGES CSS - SHARED STYLES
+   Used for: login, register, forgot-password, reset-password
+   ============================================ */
+
+body {
+    background-image: url('../assets/login.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login-card-custom {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 48px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+}
+
+.input-wrapper {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.input-wrapper i {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    transition: 0.3s;
+    z-index: 1;
+}
+
+.input-wrapper i.lock-icon {
+    z-index: 1;
+}
+
+.input-wrapper input {
+    position: relative;
+    z-index: 1;
+}
+
+.input-custom {
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.4) !important;
+    border: none !important;
+    color: #ffffff !important;
+    padding: 14px 15px 14px 45px;
+    border-radius: 50px;
+    outline: none;
+    transition: 0.3s;
+}
+
+.input-custom::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+}
+
+.input-custom:focus {
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2) !important;
+}
+
+.input-custom:focus + i, .input-wrapper:focus-within i {
+    color: #8b5cf6;
+}
+
+/* Password toggle icon */
+.has-toggle-icon .input-custom {
+    padding-right: 45px;
+}
+
+.password-toggle-icon {
+    position: absolute !important;
+    left: auto !important;
+    right: 18px !important;
+    cursor: pointer !important;
+    opacity: 0.7;
+    transition: 0.3s;
+}
+
+.password-toggle-icon:hover {
+    opacity: 1;
+    color: #8b5cf6 !important;
+}
+
+/* Input with button group */
+.input-with-btn {
+    display: flex;
+    gap: 10px;
+}
+
+.input-with-btn .input-custom {
+    flex: 1;
+}
+
+.btn-gradient {
+    width: 100%;
+    background: linear-gradient(to right, #a855f7, #06b6d4) !important;
+    border: none;
+    color: white;
+    padding: 14px;
+    border-radius: 50px;
+    font-weight: 600;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    transition: 0.3s;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+}
+
+.btn-gradient:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(168, 85, 247, 0.5);
+}
+
+.btn-otp {
+    background: linear-gradient(to right, #a855f7, #06b6d4);
+    border: none;
+    color: white;
+    padding: 14px 20px;
+    border-radius: 50px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: 0.3s;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+}
+
+.btn-otp:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+.btn-otp:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.bottom-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+}
+
+.bottom-text a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.bottom-text a:hover {
+    text-decoration: underline;
+    color: #06b6d4;
+}
+
+.cloud-icon {
+    font-size: 48px;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+.title-text {
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 28px;
+    letter-spacing: 1px;
+    margin-bottom: 30px;
+}
+
+.subtitle-text {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.otp-timer {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 8px;
+    text-align: left;
+    padding-left: 18px;
+}
+
+.otp-timer span {
+    color: #06b6d4;
+    font-weight: bold;
+}
+
+/* Input error/success states */
+.input-error {
+    border: 2px solid #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+.input-success {
+    border: 2px solid #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+}
+
+/* ============================================
+   TOAST NOTIFICATION STYLES
+   ============================================ */
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast-notification {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: slideIn 0.4s ease-out, fadeOut 0.4s ease-in 3.6s forwards;
+    min-width: 280px;
+}
+
+.toast-notification.success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-left: 4px solid #34d399;
+}
+
+.toast-notification.error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-left: 4px solid #f87171;
+}
+
+.toast-notification.info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border-left: 4px solid #60a5fa;
+}
+
+.toast-notification i {
+    margin-right: 12px;
+    font-size: 20px;
+}
+
+.toast-notification .toast-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0 0 0 12px;
+    opacity: 0.8;
+}
+
+.toast-notification .toast-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* ============================================
+   LOADING OVERLAY STYLES
+   ============================================ */
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9998;
+    backdrop-filter: blur(4px);
+}
+
+.loading-overlay.hidden {
+    display: none;
+}
+
+.loading-spinner {
+    text-align: center;
+}
+
+.loading-spinner i {
+    font-size: 48px;
+    color: #8b5cf6;
+    animation: spin 1s linear infinite;
+}
+
+.loading-spinner p {
+    color: white;
+    margin-top: 16px;
+    font-weight: 500;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   PASSWORD TOGGLE ICON STYLES
+   ============================================ */
+
+.password-toggle-icon {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity 0.3s ease, color 0.3s ease;
+    opacity: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.input-wrapper:hover .password-toggle-icon,
+.input-wrapper:focus-within .password-toggle-icon {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.password-toggle-icon:hover {
+    color: #8b5cf6;
+}
+
+/* Adjust input padding when icon is present */
+.input-wrapper.has-toggle-icon input {
+    padding-right: 45px;
+}

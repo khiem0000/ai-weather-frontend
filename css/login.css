@@ -1,0 +1,98 @@
+/* css/login.css */
+
+body {
+    background-image: url('../assets/login.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login-card-custom {
+    background-color: #1e293b !important; 
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 40px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+}
+
+.input-wrapper {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.input-wrapper i {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.input-custom {
+    width: 100%;
+    background-color: #0f172a !important; 
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    padding: 12px 15px 12px 45px;
+    border-radius: 25px;
+    outline: none;
+    transition: 0.3s;
+}
+
+.input-custom::placeholder {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.input-custom:focus {
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2) !important;
+}
+
+.input-custom:focus + i, .input-wrapper:focus-within i {
+    color: #8b5cf6;
+}
+
+.btn-gradient {
+    width: 100%;
+    background: linear-gradient(to right, #8b5cf6, #06b6d4) !important; 
+    border: none;
+    color: white;
+    padding: 12px;
+    border-radius: 25px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.btn-gradient:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+}
+
+.bottom-text {
+    font-size: 13px;
+    color: #94a3b8;
+}
+.bottom-text a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: bold;
+    transition: 0.3s;
+}
+.bottom-text a:hover {
+    text-decoration: underline;
+    color: #06b6d4;
+}
