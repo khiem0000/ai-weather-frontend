@@ -463,7 +463,7 @@ async function sendChatMessage() {
     
     try {
         // Gọi API POST /api/chat
-        const response = await fetch('http://127.0.0.1:5000/api/chat', {
+        const response = await fetch('https://ai-weather-backend-f8q6.onrender.com/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

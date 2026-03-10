@@ -678,16 +678,25 @@
     <script src="./js/main.js"></script>
     <script src="./js/chatbot.js"></script>
 
+<!-- ========================================================= -->
+    <!-- FLOATING BUTTONS CONTAINER - Chat & Install App -->
     <!-- ========================================================= -->
-    <!-- CHAT BOT - Floating Action Button -->
-    <!-- ========================================================= -->
-    <div class="chat-fab-container" id="chat-fab-container">
-        <div class="chat-fab-glow"></div>
-        <div class="chat-fab-glow"></div>
-        <div class="chat-fab-glow"></div>
-        <div class="chat-fab-glow"></div>
-        <button class="chat-fab" id="chat-fab" title="Chat với AI Assistant">
-            <i class="fas fa-comment-dots"></i>
+    <div class="floating-buttons-container">
+        <!-- Chat FAB -->
+        <div class="chat-fab-container" id="chat-fab-container">
+            <div class="chat-fab-glow"></div>
+            <div class="chat-fab-glow"></div>
+            <div class="chat-fab-glow"></div>
+            <div class="chat-fab-glow"></div>
+            <button class="chat-fab" id="chat-fab" title="Chat với AI Assistant">
+                <i class="fas fa-comment-dots"></i>
+            </button>
+        </div>
+
+        <!-- PWA Install Button -->
+        <button id="btn-install-app">
+            <i class="fas fa-download"></i>
+            <span>Cài đặt App</span>
         </button>
     </div>
 
@@ -747,11 +756,6 @@
             </div>
         </div>
     </div>
-    <!-- PWA Install Button -->
-    <button id="btn-install-app">
-        <i class="fas fa-download"></i>
-        <span>Cài đặt App</span>
-    </button>
 
     <!-- PWA Install Script -->
     <script src="./js/pwa-install.js"></script>

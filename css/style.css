@@ -1792,3 +1792,172 @@ body.light-theme .btn-chat-delete-cancel:hover {
     border-color: rgba(0, 0, 0, 0.2);
     color: #1e293b;
 }
+
+/* ========================================
+   RESPONSIVE MOBILE (BẢN FINAL V4 - TỈA PIXEL STATS)
+   ======================================== */
+@media (max-width: 768px) {
+    /* --- BỐ CỤC NỀN (GIỮ NGUYÊN) --- */
+    body, html { overflow: hidden !important; width: 100%; height: 100%; }
+    .dashboard-container {
+        display: flex !important; flex-direction: column !important;
+        margin-left: 60px !important; width: calc(100% - 60px) !important;
+        height: 100vh !important; overflow-y: auto !important; overflow-x: hidden !important;
+        padding: 15px 15px 100px 15px !important;
+    }
+    .sidebar {
+        width: 60px !important; min-width: 60px !important; position: fixed !important; 
+        left: 0 !important; top: 0 !important; height: 100vh !important; z-index: 1000 !important; padding: 15px 0 !important;
+    }
+    .sidebar span, .sidebar p, .sidebar h1, .theme-text, .logo-text { display: none !important; }
+    .chat-fab-container {
+        position: fixed !important; bottom: 20px !important; right: 15px !important;
+        display: flex !important; flex-direction: column !important; gap: 15px !important;
+        z-index: 9999 !important; align-items: flex-end !important;
+    }
+
+    /* ==========================================
+       1. FIX TAB WEATHER: (GIỮ NGUYÊN)
+       ========================================== */
+    .main-weather, .right-widgets { height: auto !important; overflow: visible !important; }
+    .main-card { 
+        min-height: 350px !important; height: auto !important; 
+        display: flex !important; flex-direction: column !important; justify-content: flex-start !important;
+        padding-top: 20px !important;
+    }
+    .main-card-visual { 
+        position: relative !important; height: 140px !important; margin-bottom: 0 !important; order: -1 !important; 
+    }
+    .temp-display { margin-top: 0 !important; }
+    .gradient-text { font-size: 80px !important; }
+
+    .forecast-panel, .forecast-list { height: auto !important; overflow: visible !important; }
+    .sub-widgets-container { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 15px !important; height: auto !important; }
+
+    /* ==========================================
+       2. FIX TAB KẾ HOẠCH (PLANNER): (GIỮ NGUYÊN)
+       ========================================== */
+    .planner-navbar {
+        display: flex !important; flex-direction: column !important; align-items: center !important; 
+        height: auto !important; padding: 10px 0 !important; gap: 15px !important;
+    }
+    .nav-pills-light {
+        width: 100% !important; overflow-x: auto !important; justify-content: center !important; 
+        gap: 20px !important; padding-bottom: 5px !important;
+    }
+    .nav-item-light { white-space: nowrap !important; }
+    .planner-navbar > div:not(.nav-pills-light) {
+        display: flex !important; width: 100% !important; justify-content: center !important; gap: 15px !important;
+    }
+    #planner-view { height: auto !important; overflow: visible !important; }
+    .planner-main-grid-light { display: flex !important; flex-direction: column !important; height: auto !important; }
+
+    /* ==========================================
+       3. FIX TAB CÀI ĐẶT (SETTINGS): (GIỮ NGUYÊN)
+       ========================================== */
+    #settings-view { height: auto !important; overflow: visible !important; }
+    #settings-view > div, .settings-wrapper { display: flex !important; flex-direction: column !important; width: 100% !important; gap: 20px !important; }
+    #user-dropdown { width: 100% !important; }
+
+    /* ==========================================
+       4. FIX TAB THỐNG KÊ (STATS): Bố cục 2 hàng Flexbox
+       ========================================== */
+    #statistics-view { height: auto !important; overflow: visible !important; }
+    .stats-premium-grid { 
+        display: flex !important; 
+        flex-direction: column !important; 
+        height: auto !important; 
+        gap: 20px !important; 
+        padding-top: 22px !important; /* Tạo khoảng thở cho header */
+    }
+    .stat-card-premium, .full-width-premium { height: auto !important; min-height: 250px !important; }
+    
+    /* Header: Bố cục 2 hàng với Flexbox */
+    .header-top, .stat-premium-header {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        height: auto !important;
+        padding: 10px 5px !important;
+        gap: 12px !important;
+    }
+    
+    /* Hàng 1: Title + Avatar (cùng dòng) */
+    .header-top .header-left, 
+    .stat-premium-header .header-left {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        gap: 10px !important;
+    }
+    
+    /* Tiêu đề chính */
+    .header-top .title-main, 
+    .stat-premium-header .title-main,
+    .header-top h1, .header-top h2, .header-top h3,
+    .stat-premium-header h1, .stat-premium-header h2, .stat-premium-header h3 {
+        width: auto !important;
+        flex: 1 !important;
+        text-align: left !important;
+        margin: 0 !important;
+        font-size: 20px !important;
+    }
+    
+    /* Avatar/User info bên phải */
+    .header-top .header-right,
+    .stat-premium-header .header-right {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        white-space: nowrap !important;
+    }
+    
+    /* Hàng 2: Guide button + Search bar */
+    .header-top .header-left > button,
+    .stat-premium-header .header-left > button,
+    .header-top #open-stat-info,
+    .stat-premium-header #open-stat-info {
+        display: inline-flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        flex-shrink: 0 !important;
+    }
+    
+    /* Thanh tìm kiếm - chiếm phần còn lại */
+    .header-top .header-left > div:not(.header-right),
+    .stat-premium-header .header-left > div:not(.header-right),
+    .header-top .header-left > div:last-child,
+    .stat-premium-header .header-left > div:last-child,
+    .header-top .search-section,
+    .stat-premium-header .search-section {
+        display: flex !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    /* Container tìm kiếm bên trong */
+    .header-top .header-left > div > div,
+    .stat-premium-header .header-left > div > div,
+    .header-top .glass-panel-light[style*="220px"],
+    .stat-premium-header .glass-panel-light[style*="220px"] {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* ==========================================
+       5. FIX TAB VỆ TINH (SATELLITE): (GIỮ NGUYÊN)
+       ========================================== */
+    #satellite-view { height: auto !important; }
+    .map-container, #large-map, #map {
+        display: block !important; width: 100% !important; height: calc(100vh - 120px) !important; 
+        min-height: 600px !important; visibility: visible !important; opacity: 1 !important; 
+        position: relative !important; z-index: 10 !important;
+    }
+    .map-legend {
+        bottom: 5px !important; left: 50% !important; right: auto !important;
+        transform: translateX(-50%) scale(0.85) !important; width: 90% !important;
+    }
+}
