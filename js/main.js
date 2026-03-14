@@ -683,13 +683,35 @@ menuItems.forEach((item, index) => {
 // =========================================================================
 async function fetchWeatherData(query) {
     console.log('fetchWeatherData called with query:', query);
+    const startTime = Date.now(); // 1. BẮT ĐẦU BẤM GIỜ
+    
     try {
         const safeQuery = encodeURIComponent(removeVietnameseTones(query));
         const langParam = window.appSettings.language; 
         const response = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${safeQuery}&days=7&aqi=yes&lang=${langParam}`);
         
-        if (!response.ok) return;
+        const responseTime = Date.now() - startTime; // Dừng bấm giờ
+
+        if (!response.ok) {
+            // Báo cáo lỗi (Dùng query cũ vì chưa có data)
+            if (typeof reportApiLog === 'function') {
+                reportApiLog('WeatherAPI', response.status, responseTime, query, "Lỗi từ API");
+            }
+            return;
+        }
+
+        // ĐỌC DỮ LIỆU JSON TRƯỚC
         const data = await response.json();
+        window.currentWeatherData = data; 
+        window.lastSearchedQuery = query; 
+
+        // BÁO CÁO THÀNH CÔNG (Dùng data.location.name để lấy tên thật: "Can Tho", "Hanoi"...)
+        if (typeof reportApiLog === 'function') {
+            const realCityName = data.location && data.location.name ? data.location.name : query;
+            reportApiLog('WeatherAPI', 200, responseTime, realCityName);
+        }
+        
+        updateLastUpdatedTime();
         window.currentWeatherData = data; 
         window.lastSearchedQuery = query; 
         
@@ -773,7 +795,13 @@ async function fetchWeatherData(query) {
 
         checkSmartNotifications();
 
-    } catch (err) { console.error("Fetch Error:", err); }
+    } catch (err) { 
+        console.error("Fetch Error:", err); 
+        // BÁO CÁO LỖI MẠNG
+        if (typeof reportApiLog === 'function') {
+            reportApiLog('WeatherAPI', 500, Date.now() - startTime, query, err.message);
+        }
+    }
 }
 
 // =========================================================================
@@ -1823,7 +1851,6 @@ async function loadCurrentAccount() {
     
     if (account) {
         // LUỒNG KIỂM SOÁT 1: LUÔN LOAD SETTINGS MỚI TỪ API
-        // FIX: Trước đây chỉ load khi chưa complete onboarding, nên toggle không cập nhật after logout/login
         const token = localStorage.getItem('token');
         if (token) {
             try {
@@ -1838,43 +1865,23 @@ async function loadCurrentAccount() {
                     const settings = await response.json();
                     console.log('📡 API returned settings:', settings);
                     if (settings.hasCompletedOnboarding) {
-                        // API có settings, cập nhật localStorage với dữ liệu mới nhất
-                        // IMPORTANT: Merge API settings with localStorage settings to preserve city selection
-                        // Don't replace entirely, as API might not return all fields
                         const oldSettings = account.settings;
                         account.settings = {
-                            ...account.settings,  // Keep existing localStorage settings (especially city)
-                            ...settings           // Override with API settings to get latest toggle states
+                            ...account.settings,
+                            ...settings
                         };
-                        console.log('🔄 Merged settings - Before:', oldSettings);
-                        console.log('🔄 Merged settings - After:', account.settings);
-                        console.log('🔄 Merged settings - City preserved?:', account.settings.city);
-                        console.log('🔄 Merged settings - Notification toggles from API:', {
-                            notifySevere: settings.notifySevere,
-                            notifyDaily: settings.notifyDaily,
-                            notifyPlanner: settings.notifyPlanner
-                        });
                         saveCurrentAccount(account);
-                        console.log('Settings loaded from API, hasCompletedOnboarding:', settings.hasCompletedOnboarding);
                     } else {
-                        // API chưa có onboarding, redirect về onboarding
-                        window.location.href = 'onboarding.html';
-                        return;
+                        // Let auth-check handle missing onboarding
                     }
                 } else {
-                    // Lỗi API, redirect về onboarding
-                    window.location.href = 'onboarding.html';
-                    return;
+                    // API Error, let auth-check handle
                 }
             } catch (error) {
                 console.error('Error loading settings from API:', error);
-                window.location.href = 'onboarding.html';
-                return;
             }
         } else {
-            // Không có token, redirect về onboarding
-            window.location.href = 'onboarding.html';
-            return;
+            // No token, let auth-check handle
         }
 
         // IMPORTANT: Clear old tasks when switching accounts to prevent stale data
@@ -1911,7 +1918,6 @@ async function loadCurrentAccount() {
         loadProfileData();
         
         // LUỒNG KIỂM SOÁT 2: Nạp đúng thành phố để hiển thị dữ liệu thời tiết
-        // Sử dụng fetchWeatherByGPS để ưu tiên GPS -> Fallback về city trong DB
         console.log('🏙️ Final check - account.settings:', account.settings);
         console.log('🏙️ Final check - account.settings.city:', account.settings?.city);
         
@@ -2321,16 +2327,66 @@ window.loginSuccess = function(userData, token) {
     window.location.href = 'onboarding.html';
 };
 
-// Initialize on DOM ready
+// 🚀 FIXED: UNBLOCKING INIT SEQUENCE
+// 1. Show UI immediately + tabs
+// 2. Lazy load heavy features after 500ms
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded fired, calling initAccountSystem...');
-    initAccountSystem();
+    console.log('🎯 DOMContentLoaded - UNBLOCKING INIT');
+    
+    // IMMEDIATE: Show loading + basic UI
+    showLoadingScreen();
+    initTabs(); // UI visible NOW
+    
+    // LAZY: Heavy features after DOM settled
+    setTimeout(() => {
+        console.log('⏳ Lazy init: account + weather');
+        initAccountSystem();
+        getPreciseLocationWithFallback();
+    }, 500);
 });
 
-// Also initialize immediately in case DOM is already ready
+// Show loading screen immediately (non-blocking)
+function showLoadingScreen() {
+    const loadingEl = document.getElementById('loading-screen');
+    if (loadingEl) {
+        loadingEl.style.display = 'flex';
+    }
+    
+    // Auto hide after 2s or when weather loads
+    setTimeout(() => {
+        hideLoadingScreen();
+    }, 2000);
+}
+
+// Hide loading screen
+function hideLoadingScreen() {
+    const loadingEl = document.getElementById('loading-screen');
+    if (loadingEl) {
+        loadingEl.style.display = 'none';
+    }
+}
+
+// GPS with shorter timeout + fallback (non-blocking)
+function getPreciseLocationWithFallback() {
+    const account = getCurrentAccount();
+    const fallbackCity = account?.settings?.city || 'Can Tho';
+    
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            pos => fetchWeatherData(`${pos.coords.latitude},${pos.coords.longitude}`),
+            () => fetchWeatherData(fallbackCity),
+            { timeout: 2000, enableHighAccuracy: false } // 2s + low accuracy = fast
+        );
+    } else {
+        fetchWeatherData(fallbackCity);
+    }
+}
+
+// Also init if DOM already ready
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    console.log('DOM already ready, calling initAccountSystem...');
-    initAccountSystem();
+    showLoadingScreen();
+    initTabs();
+    setTimeout(initAccountSystem, 500);
 }
 
 function reRenderWeatherUI() {
@@ -2533,14 +2589,12 @@ async function loadLoginHistory() {
 
 /**
  * Kiểm tra và hiển thị thông báo hệ thống (System Announcement)
- * 
- * Logic hoạt động:
+ * * Logic hoạt động:
  * 1. Khi load trang index.html, JS sẽ kiểm tra biến muteSystemNotifUntil trong localStorage
  * 2. Nếu thời gian hiện tại (Date.now()) vẫn NHỎ HƠN thời gian trong localStorage -> Bỏ qua
  * 3. Nếu chưa bị tắt hoặc đã hết 8 tiếng -> Gọi API Backend để lấy thông báo
  * 4. Nếu có thông báo, hiển thị Modal popup ra giữa màn hình
- * 
- * Trên Popup có 2 nút:
+ * * Trên Popup có 2 nút:
  * - Nút 'Đóng': Chỉ Ẩn Modal hiện tại (lần sau F5 vẫn hiện lại)
  * - Nút 'Không hiện lại trong 8 tiếng': Ẩn Modal và set localStorage thời gian hiện tại + 8 tiếng
  */
@@ -2670,3 +2724,58 @@ document.addEventListener('DOMContentLoaded', function() {
         checkAndShowSystemAnnouncement();
     }, 1500); // 1500ms = 1.5 giây
 });
+
+// Hàm để Frontend báo cáo log về cho Backend (ĐÃ FIX: BẮT VỊ TRÍ THẬT)
+async function reportApiLog(apiName, statusCode, responseTime, searchedLocation, errorMsg = null) {
+    try {
+        let userId = null;
+        // Tạm lấy vị trí tìm kiếm làm phương án dự phòng
+        let trueLocation = searchedLocation; 
+
+        // 1. Lục tìm ID và Vị trí thật (Home City) trong hồ sơ tài khoản
+        const accountStr = localStorage.getItem('currentAccount');
+        if (accountStr) {
+            const account = JSON.parse(accountStr);
+            userId = account.id || null;
+            
+            // ÉP GHI ĐÈ: Sử dụng vị trí thật mà người dùng đã thiết lập/định vị
+            if (account.settings && account.settings.city) {
+                trueLocation = account.settings.city;
+            }
+        } 
+        // 2. Nếu chưa đăng nhập, thử lấy từ cài đặt web hiện tại
+        else if (window.appSettings && window.appSettings.city) {
+            trueLocation = window.appSettings.city;
+        }
+
+        // 3. Gửi dữ liệu về Backend
+        await fetch('https://ai-weather-backend-f8q6.onrender.com/api/admin/log-api', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: userId,
+                apiName: apiName,
+                statusCode: statusCode,
+                responseTimeMs: responseTime,
+                location: trueLocation, // CHỈ GỬI VỊ TRÍ THẬT CỦA USER
+                errorMessage: errorMsg
+            })
+        });
+    } catch (e) {
+        console.log("Lỗi gửi log:", e);
+    }
+}
+
+// ==========================================
+// CÁCH SỬ DỤNG TRONG HÀM GỌI THỜI TIẾT CỦA BẠN:
+// ==========================================
+// const startTime = Date.now();
+// const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?...`);
+// const responseTime = Date.now() - startTime;
+//
+// if (response.ok) {
+//     reportApiLog(200, responseTime, city_name);
+// } else {
+//     reportApiLog(response.status, responseTime, city_name, "Lỗi fetch thời tiết");
+// }
+

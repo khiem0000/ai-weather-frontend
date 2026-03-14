@@ -55,6 +55,16 @@
 
     <script src="./js/auth.js"></script>
     <script src="./js/login.js"></script>
+
+    <!-- Glassmorphism Modal for Locked Account -->
+    <div id="locked-modal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: rgba(255, 255, 255, 0.15); padding: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.3); text-align: center; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); max-width: 400px; width: 90%;">
+            <i class="fas fa-user-lock" style="font-size: 50px; color: #ff4d4f; margin-bottom: 20px;"></i>
+            <h2 style="color: white; margin-bottom: 15px; font-weight: 600;">Tài khoản bị khóa</h2>
+            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; line-height: 1.6;">Tài khoản của bạn đã bị khóa do vi phạm chính sách hoặc lý do bảo mật. Hãy liên hệ <b>ADMIN</b> để biết thêm thông tin.</p>
+            <button onclick="document.getElementById('locked-modal').style.display='none'" style="background: #4facfe; color: white; border: none; padding: 12px 30px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; width: 100%;">Đã hiểu</button>
+        </div>
+    </div>
 </body>
 </html>
 

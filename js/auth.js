@@ -81,3 +81,24 @@ function togglePassword(inputId, iconElement) {
     }
 }
 
+// =========================================================================
+// KIỂM TRA BỊ TRỤC XUẤT DO KHÓA TÀI KHOẢN
+// =========================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Tìm kiếm còi báo động trên thanh địa chỉ
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.get('locked') === 'true') {
+        // Đợi 0.5s cho web load xong rồi mới bắn Toast báo lỗi
+        setTimeout(() => {
+            if (typeof showToast === 'function') {
+                showToast('Tài khoản của bạn đã bị Admin khóa!', 'error');
+            } else {
+                alert('Tài khoản của bạn đã bị Admin khóa!');
+            }
+            // Xóa chữ ?locked=true trên thanh địa chỉ đi cho đẹp và bảo mật
+            window.history.replaceState({}, document.title, "login.html");
+        }, 500);
+    }
+});
+

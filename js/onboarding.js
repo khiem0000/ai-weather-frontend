@@ -500,58 +500,37 @@ function checkAuth() {
 }
 
 // ========================================
-// Check if onboarding should be shown
-// ========================================
-function shouldShowOnboarding() {
-    const account = getCurrentAccount();
-    
-    if (!account) {
-        return false; // No account, shouldn't be here
-    }
-    
-    // Check if onboarding is already completed
-    if (account.settings && account.settings.hasCompletedOnboarding) {
-        // Already completed, redirect to index
-        window.location.href = 'index.html';
-        return false;
-    }
-    
-    return true;
-}
-
-// ========================================
-// Initialize Onboarding Page
-// ========================================
-document.addEventListener('DOMContentLoaded', function() {
-    // Check authentication
-    if (!checkAuth()) {
-        return;
-    }
-    
-    // Check if should show onboarding
-    if (!shouldShowOnboarding()) {
-        return;
-    }
-    
-    // Initialize controls
-    initOnboardingControls();
-    
-    // Initialize GPS button
-    initGPSButton();
-    
-    // Initialize city search with autocomplete
-    initCitySearch();
-    
-    // Set username
-    const account = getCurrentAccount();
-    if (account) {
-        const usernameEl = document.getElementById('onboarding-username');
-        if (usernameEl) {
-            const firstName = account.full_name ? account.full_name.split(' ')[0] : 'User';
-            usernameEl.textContent = `Welcome, ${firstName}!`;
+    // Initialize Onboarding Page
+    // ========================================
+    document.addEventListener('DOMContentLoaded', async function() {
+        
+        // 1. KIÊN NHẪN CHỜ ANH BẢO VỆ XÁC NHẬN API XONG XUÔI
+        if (typeof window.checkAuth === 'function') {
+            const isAuthenticated = await window.checkAuth();
+            if (!isAuthenticated) return; // Nếu bị đuổi thì dừng lại ngay
         }
-    }
-    
-    console.log('Onboarding page initialized');
-});
+        
+        // 2. BÍ QUYẾT TẠI ĐÂY: KÉO TẤM MÀN LOADING LÊN ĐỂ HIỆN GIAO DIỆN!
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('hidden');
+        }
+        
+        // 3. Khởi tạo các chức năng bình thường của trang
+        if (typeof initOnboardingControls === 'function') initOnboardingControls();
+        if (typeof initGPSButton === 'function') initGPSButton();
+        if (typeof initCitySearch === 'function') initCitySearch();
+        
+        // 4. Hiển thị tên User
+        if (typeof getCurrentAccount === 'function') {
+            const account = getCurrentAccount();
+            if (account) {
+                const usernameEl = document.getElementById('onboarding-username');
+                if (usernameEl) {
+                    const firstName = account.full_name ? account.full_name.split(' ')[0] : 'User';
+                    usernameEl.textContent = `Welcome, ${firstName}!`;
+                }
+            }
+        }
+    });
 

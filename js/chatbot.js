@@ -154,8 +154,12 @@ function getUserAvatar() {
 // INITIALIZATION
 // ============================================================
 
-// Initialize Chat Bot
-function initChatBot() {
+// ============================================================
+// INITIALIZATION
+// ============================================================
+
+// Initialize Chat Bot (Đã nâng cấp Auto-Check Bảo trì)
+async function initChatBot() {
     if (isChatInitialized) return;
     
     const chatFab = document.getElementById('chat-fab');
@@ -164,71 +168,78 @@ function initChatBot() {
     const chatTrashBtn = document.getElementById('chat-trash-btn');
     const chatInput = document.getElementById('chat-input');
     const chatSendBtn = document.getElementById('chat-send-btn');
-    const chatMessagesContainer = document.getElementById('chat-messages');
     
-// Open chat modal
+    // --------------------------------------------------------
+    // 1. HỎI BACKEND XEM CÓ ĐANG BẢO TRÌ KHÔNG?
+    // --------------------------------------------------------
+    try {
+        const response = await fetch('https://ai-weather-backend-f8q6.onrender.com/api/chat/status');
+        const data = await response.json();
+        
+        if (data.maintenance_mode) {
+            // NẾU BẢO TRÌ: Đổi nút sang màu xám và vô hiệu hóa Modal
+            if (chatFab) {
+                chatFab.style.background = '#9ca3af'; // Màu xám chuẩn UI
+                chatFab.style.boxShadow = 'none';
+                chatFab.style.cursor = 'not-allowed';
+                
+                // Ghi đè sự kiện click: Bấm vào chỉ hiện thông báo, không mở Chat
+                chatFab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const lang = window.appSettings?.language || 'vi';
+                    const msg = lang === 'vi' 
+                        ? "🚧 Hệ thống AI Chatbot đang được bảo trì để nâng cấp. Vui lòng quay lại sau nhé!" 
+                        : "🚧 AI Chatbot is currently under maintenance. Please come back later!";
+                        
+                    if (typeof showToast === 'function') {
+                        showToast(msg, 'warning');
+                    } else {
+                        alert(msg);
+                    }
+                });
+            }
+            isChatInitialized = true;
+            return; // ⛔ DỪNG LUÔN, KHÔNG KHỞI TẠO CÁC TÍNH NĂNG CHAT BÊN DƯỚI NỮA
+        }
+    } catch (error) {
+        console.error('❌ Lỗi kiểm tra trạng thái bảo trì:', error);
+    }
+
+    // --------------------------------------------------------
+    // 2. NẾU KHÔNG BẢO TRÌ: GÁN SỰ KIỆN MỞ CHAT BÌNH THƯỜNG
+    // --------------------------------------------------------
     if (chatFab) {
+        // Đảm bảo nút trở lại màu xanh nếu vừa tắt bảo trì
+        chatFab.style.background = 'var(--primary-blue, #4facfe)'; 
+        chatFab.style.boxShadow = '0 4px 15px rgba(79, 172, 254, 0.4)';
+        chatFab.style.cursor = 'pointer';
+
         chatFab.addEventListener('click', () => {
             if (chatModalOverlay) {
                 chatModalOverlay.classList.add('show');
-                // Focus on input
                 setTimeout(() => {
                     if (chatInput) chatInput.focus();
                 }, 300);
-                
-                // Load chat history when opening
                 renderChatHistory();
-                
-                // Auto-greeting: Check if chat history is empty and show welcome message
                 checkAndShowAutoGreeting();
             }
         });
     }
     
-    // Close chat modal
-    if (chatCloseBtn) {
-        chatCloseBtn.addEventListener('click', () => {
-            if (chatModalOverlay) {
-                chatModalOverlay.classList.remove('show');
-            }
-        });
-    }
+    // Các nút chức năng trong khung chat (Close, Trash, Send)
+    if (chatCloseBtn) chatCloseBtn.addEventListener('click', () => chatModalOverlay?.classList.remove('show'));
+    if (chatTrashBtn) chatTrashBtn.addEventListener('click', () => clearChatHistory());
+    if (chatModalOverlay) chatModalOverlay.addEventListener('click', (e) => {
+        if (e.target === chatModalOverlay) chatModalOverlay.classList.remove('show');
+    });
+    if (chatSendBtn) chatSendBtn.addEventListener('click', () => sendChatMessage());
+    if (chatInput) chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChatMessage();
+    });
     
-// Clear chat history - Trash button - Opens glassmorphism modal
-    if (chatTrashBtn) {
-        chatTrashBtn.addEventListener('click', () => {
-            clearChatHistory();
-        });
-    }
-    
-    // Close when clicking on overlay
-    if (chatModalOverlay) {
-        chatModalOverlay.addEventListener('click', (e) => {
-            if (e.target === chatModalOverlay) {
-                chatModalOverlay.classList.remove('show');
-            }
-        });
-    }
-    
-    // Send message on button click
-    if (chatSendBtn) {
-        chatSendBtn.addEventListener('click', () => {
-            sendChatMessage();
-        });
-    }
-    
-    // Send message on Enter key
-    if (chatInput) {
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendChatMessage();
-            }
-        });
-    }
-    
-    // Initialize suggestion chips
     initSuggestionChips();
-    
     isChatInitialized = true;
 }
 

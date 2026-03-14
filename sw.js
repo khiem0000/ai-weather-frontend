@@ -17,60 +17,29 @@
  * - App đang mở hoặc đã đóng hoàn toàn (background)
  */
 self.addEventListener('push', function(event) {
-    console.log('[Service Worker] Push event nhận được!', event);
-    
-    // Lấy dữ liệu từ notification
-    let data = {
-        title: 'AI Weather',
-        body: 'Bạn có thông báo mới',
-        icon: '/assets/icon-192.png',
-        badge: '/assets/badge-72.png',
-        tag: 'default',
-        data: {}
-    };
-    
-    // Nếu có dữ liệu từ server, sử dụng dữ liệu đó
     if (event.data) {
-        try {
-            const payload = event.data.json();
-            data = {
-                ...data,
-                ...payload
-            };
-            console.log('[Service Worker] Dữ liệu Push:', data);
-        } catch (e) {
-            console.log('[Service Worker] Dữ liệu Push (text):', event.data.text());
-            data.body = event.data.text();
+        const data = event.data.json();
+        
+        const options = {
+            body: data.body || data.message,
+            icon: '/assets/icons/icon-192x192.png',
+            badge: '/assets/favicon.png', // Icon nhỏ trên thanh status bar
+            vibrate: [300, 100, 400, 100, 400, 100, 400], // Rung giật cấp mạnh báo khẩn cấp!
+            requireInteraction: true, // Bắt user phải bấm tắt chứ không tự biến mất
+            data: {
+                url: data.url || '/'
+            }
+        };
+
+        // Nếu là cảnh báo khẩn cấp, có thể đổi icon màu đỏ nếu bạn có ảnh
+        if (data.type === 'severe') {
+            // options.icon = '/assets/icons/alert-icon.png'; 
         }
+
+        event.waitUntil(
+            self.registration.showNotification(data.title || "AI Weather Alert", options)
+        );
     }
-    
-    // Cấu hình options cho notification
-    const options = {
-        body: data.body,
-        icon: data.icon || '/assets/icon-192.png',
-        badge: data.badge || '/assets/badge-72.png',
-        image: data.image || null, // Ảnh thumbnail (VD: thời tiết)
-        tag: data.tag || 'default', // Dùng để nhóm notification
-        data: data.data || {}, // Dữ liệu custom để xử lý sau
-        requireInteraction: data.requireInteraction || false, // Bắt buộc user tương tác
-        actions: data.actions || [ // Các nút hành động
-            { action: 'open', title: 'Mở App' },
-            { action: 'dismiss', title: 'Đóng' }
-        ],
-        vibrate: [100, 50, 100], // Rung (nếu thiết bị hỗ trợ)
-        timestamp: Date.now()
-    };
-    
-    // Hiển thị notification
-    event.waitUntil(
-        self.registration.showNotification(data.title, options)
-            .then(() => {
-                console.log('[Service Worker] ✅ Notification đã hiển thị!');
-            })
-            .catch((error) => {
-                console.error('[Service Worker] ❌ Lỗi hiển thị notification:', error);
-            })
-    );
 });
 
 // ============================================================

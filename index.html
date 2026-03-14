@@ -65,8 +65,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <link rel="stylesheet" href="./css/style.css">
     
-    <!-- Auth Check - Protected Route -->
-    <script src="./js/auth-check.js"></script>
+    <script src="./js/auth-check.js?v=1.2"></script>
 </head>
 <body>
 
@@ -674,7 +673,21 @@
     </div>
     
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="./js/profile.js"></script>
+<script src="./js/profile.js"></script>
+    
+    <!-- LOADING SCREEN - Phase 2 Fix -->
+    <div id="loading-screen" style="
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+        display: none; align-items: center; justify-content: center; z-index: 99999;
+        flex-direction: column; color: white; font-family: 'Inter', sans-serif;
+    ">
+        <div style="font-size: 48px; margin-bottom: 20px; animation: pulse 1.5s infinite;">
+            <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <div style="font-size: 18px; opacity: 0.8;">Loading weather data...</div>
+    </div>
+
     <script src="./js/main.js"></script>
     <script src="./js/chatbot.js"></script>
 

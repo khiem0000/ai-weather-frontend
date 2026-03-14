@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Weather Admin - User Management</title>
+    <link rel="icon" type="image/png" href="./assets/icons/favicon.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="stylesheet" href="./css/admin.css">
+    
+    <script src="./js/auth-check.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="admin-container">
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="logo">
+                    <i class="fa-brands fa-space-awesome"></i>
+                    <span class="logo-text">AI Weather <span class="logo-highlight">Admin</span></span>
+                </div>
+                
+                <nav class="sidebar-menu">
+                    <a href="#" class="menu-item" data-page="dashboard">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="menu-item active" data-page="users">
+                        <i class="fas fa-users"></i>
+                        <span>Users</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="analytics">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Analytics</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="settings">
+                        <i class="fas fa-gear"></i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="#" class="menu-item" data-page="support">
+                        <i class="fas fa-headset"></i>
+                        <span>Support</span>
+                    </a>
+                </nav>
+            </div>
+            
+            <div class="sidebar-bottom">
+                <button id="btn-logout" class="logout-btn">
+                    <i class="fas fa-arrow-right-from-bracket"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1 class="page-title" id="page-title">User Management</h1>
+                <div class="admin-info">
+                    <span class="admin-name">Tran Hoang Khiem</span>
+                    <img src="https://ui-avatars.com/api/?name=TK&background=4facfe&color=fff" alt="Admin Avatar" class="admin-avatar">
+                </div>
+            </header>
+
+            <div id="dashboard-content" class="content-section" style="display: none;">
+                <div class="command-center">
+                    <div class="command-cards">
+                        <div class="command-card">
+                            <div class="card-header" style="align-items: flex-start;">
+                                <i class="fas fa-server" style="margin-top: 5px;"></i>
+                                <div style="width: 100%;">
+                                    <h3>API Health Status</h3>
+                                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+                                        <div class="status-indicator" style="display: flex; align-items: center; gap: 8px;">
+                                            <span class="status-dot" id="dash-weather-dot" style="background: #fbbf24; width: 12px; height: 12px; border-radius: 50%; display: inline-block;"></span>
+                                            <span class="status-text" id="dash-weather-text">OpenWeather: Checking...</span>
+                                        </div>
+                                        <div class="status-indicator" style="display: flex; align-items: center; gap: 8px;">
+                                            <span class="status-dot" id="dash-gemini-dot" style="background: #fbbf24; width: 12px; height: 12px; border-radius: 50%; display: inline-block;"></span>
+                                            <span class="status-text" id="dash-gemini-text">Gemini: Checking...</span>
+                                        </div>
+                                        <div class="status-indicator" style="display: flex; align-items: center; gap: 8px;">
+                                            <span class="status-dot" id="dash-weatherapi-dot" style="background: #fbbf24; width: 12px; height: 12px; border-radius: 50%; display: inline-block;"></span>
+                                            <span class="status-text" id="dash-weatherapi-text">WeatherAPI: Checking...</span>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="command-card">
+                            <div class="card-header">
+                                <i class="fas fa-bullhorn"></i>
+                                <h3>Broadcast Notification</h3>
+                            </div>
+                            <div class="broadcast-form">
+                                <input type="text" id="broadcast-input" placeholder="Enter broadcast message..." maxlength="500">
+                                <button class="btn-broadcast" onclick="sendBroadcast()">
+                                    <i class="fas fa-paper-plane"></i> Send
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="command-card">
+                            <div class="card-header">
+                                <i class="fas fa-robot"></i>
+                                <h3>AI Chatbot Mode</h3>
+                            </div>
+                            <div style="padding: 0 24px 24px;">
+                                <label class="toggle-container">
+                                    <span class="toggle-label">Maintenance Mode</span>
+                                    <input type="checkbox" id="maintenance-toggle">
+                                    <span class="toggle-switch">
+                                        <span class="toggle-slider"></span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-container" style="height: 400px; display: flex; flex-direction: column; align-items: center;">
+                        <h3 style="align-self: flex-start;">User Statistics</h3>
+                        <div style="position: relative; height: 100%; width: 100%; max-width: 400px;">
+                            <canvas id="usersChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+<div id="analytics-content" class="content-section" style="display: none;">
+                <!-- 1. Analytics Header & Filter -->
+                <div class="analytics-header">
+                    <div class="header-left">
+                        <h2>Analytics Overview</h2>
+                        <p>Real-time insights into system performance and user behavior</p>
+                    </div>
+                    <div class="header-right">
+                        <label for="time-filter" class="filter-label">Time Range:</label>
+                        <select id="time-filter" class="filter-select">
+                            <option value="today">Today</option>
+                            <option value="7days" selected>Last 7 Days</option>
+                            <option value="30days">Last 30 Days</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 2. KPI Stats Row -->
+                <div class="kpi-stats">
+                    <div class="kpi-card">
+                        <div class="kpi-icon">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Total Requests</span>
+                            <span class="kpi-value" data-kpi="total">1,284</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Success Rate</span>
+                            <span class="kpi-value" data-kpi="success">99.2%</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon warning">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Avg. Latency</span>
+                            <span class="kpi-value" data-kpi="latency">0.45s</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon info">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Active Sessions</span>
+                            <span class="kpi-value" data-kpi="sessions">12</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Main Charts Row -->
+                <div class="analytics-charts">
+                    <div class="chart-card api-traffic-card">
+                        <div class="card-header">
+                            <h3>API Call Traffic</h3>
+                            <p>Usage trends across APIs over time</p>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="apiTrafficChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card error-health-card">
+                        <div class="card-header">
+                            <h3>System Health</h3>
+                            <p>Error distribution breakdown</p>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="errorPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Bottom Data Row -->
+                <div class="analytics-bottom">
+                    <!-- Top Locations -->
+                    <div class="data-card top-locations-card">
+                        <div class="card-header">
+                            <h3>Top Locations</h3>
+                            <p>Most queried cities (24h)</p>
+                        </div>
+                        <div class="locations-list">
+                            <div class="location-item">
+                                <span class="location-name">Hà Nội</span>
+                                <div class="progress-wrapper">
+                                    <div class="progress-bar" style="width: 65%"></div>
+                                </div>
+                                <span class="location-count">65%</span>
+                            </div>
+                            <div class="location-item">
+                                <span class="location-name">TP. HCM</span>
+                                <div class="progress-wrapper">
+                                    <div class="progress-bar" style="width: 22%"></div>
+                                </div>
+                                <span class="location-count">22%</span>
+                            </div>
+                            <div class="location-item">
+                                <span class="location-name">Cần Thơ</span>
+                                <div class="progress-wrapper">
+                                    <div class="progress-bar" style="width: 8%"></div>
+                                </div>
+                                <span class="location-count">8%</span>
+                            </div>
+                            <div class="location-item">
+                                <span class="location-name">Đà Nẵng</span>
+                                <div class="progress-wrapper">
+                                    <div class="progress-bar" style="width: 4%"></div>
+                                </div>
+                                <span class="location-count">4%</span>
+                            </div>
+                            <div class="location-item">
+                                <span class="location-name">Hải Phòng</span>
+                                <div class="progress-wrapper">
+                                    <div class="progress-bar" style="width: 1%"></div>
+                                </div>
+                                <span class="location-count">1%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Error Logs -->
+                    <div class="data-card error-logs-card">
+                        <div class="card-header">
+                            <h3>Recent Error Logs</h3>
+                            <p>Last 24h system errors</p>
+                        </div>
+                        <div class="logs-table-wrapper">
+                            <table class="error-logs-table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>API</th>
+                                        <th>Status</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>14:32</td>
+                                        <td>Gemini</td>
+                                        <td><span class="badge error">429</span></td>
+                                        <td>Rate limit exceeded</td>
+                                    </tr>
+                                    <tr>
+                                        <td>13:45</td>
+                                        <td>OpenWeather</td>
+                                        <td><span class="badge error">401</span></td>
+                                        <td>Invalid API key</td>
+                                    </tr>
+                                    <tr>
+                                        <td>12:18</td>
+                                        <td>WeatherAPI</td>
+                                        <td><span class="badge warning">500</span></td>
+                                        <td>Server timeout</td>
+                                    </tr>
+                                    <tr>
+                                        <td>11:05</td>
+                                        <td>Gemini</td>
+                                        <td><span class="badge error">400</span></td>
+                                        <td>Invalid request</td>
+                                    </tr>
+                                    <tr>
+                                        <td>09:47</td>
+                                        <td>OpenWeather</td>
+                                        <td><span class="badge error">404</span></td>
+                                        <td>City not found</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-content" class="content-section" style="display: none;">
+                <div class="settings-welcome">
+                    <h2>System Settings</h2>
+                    <p>Configure and test your API Keys.</p>
+                </div>
+                
+                <div class="settings-form" style="background: white; padding: 24px; border-radius: 14px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); max-width: 600px;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Gemini API Key</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="password" id="setting-gemini" style="flex: 1; padding: 10px 14px; border: 1px solid var(--gray-300); border-radius: 8px;" placeholder="Nhập Key Gemini mới...">
+                            <button type="button" onclick="checkApiKey('gemini', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: #4facfe; color: white; cursor: pointer; font-weight: 600; transition: 0.3s; min-width: 110px;">
+                                Check
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">OpenWeather API Key</label>
+</xai:function_call)
+
+
+
+<xai:function_call name="edit_file">
+<parameter name="path">
+                            <div style="display: flex; gap: 10px;">
+                                <input type="password" id="setting-weather" style="flex: 1; padding: 10px 14px; border: 1px solid var(--gray-300); border-radius: 8px;" placeholder="Nhập Key OpenWeather mới...">
+                                <button type="button" onclick="checkApiKey('weather', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: #4facfe; color: white; cursor: pointer; font-weight: 600; transition: 0.3s; min-width: 110px;">
+                                    Check
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 24px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">WeatherAPI Key</label>
+</xai:function_call)
+
+
+
+<xai:function_call name="attempt_completion">
+<parameter name="result">
+                            <div style="display: flex; gap: 10px;">
+                                <input type="password" id="setting-weatherapi" style="flex: 1; padding: 10px 14px; border: 1px solid var(--gray-300); border-radius: 8px;" placeholder="Nhập Key WeatherAPI.com mới...">
+                                <button type="button" onclick="checkApiKey('weatherapi', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: #4facfe; color: white; cursor: pointer; font-weight: 600; transition: 0.3s; min-width: 110px;">
+                                    Check
+                                </button>
+                            </div>
+                        </div>
+
+
+                    <button onclick="saveSettings()" class="btn-add-user" style="width: 100%; justify-content: center;">
+                        <i class="fas fa-save"></i> <span>Lưu cấu hình hệ thống</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="support-content" class="content-section" style="display: none;">
+                <div class="support-welcome">
+                    <h2>Support</h2>
+                    <p>Get help and manage support tickets.</p>
+                </div>
+                <div class="support-placeholder">
+                    <i class="fas fa-headset"></i>
+                    <p>Support system coming soon...</p>
+                </div>
+            </div>
+
+            <div id="users-content" class="content-section">
+                <div class="kpi-cards">
+                    <div class="kpi-card">
+                        <div class="kpi-icon total-users">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Total Users</span>
+                            <span class="kpi-value" id="total-users">--</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon active-users">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <span class="kpi-label">Active Users</span>
+                            <span class="kpi-value" id="active-users">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="toolbar">
+                    <div class="search-box">
+                        <i class="fas fa-magnifying-glass"></i>
+                        <input type="text" id="search-users" placeholder="Search users...">
+                    </div>
+                    <button class="btn-add-user" id="btn-add-new-user">
+                        <i class="fas fa-plus"></i>
+                        <span>Add New User</span>
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Joined Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr class="loading-row">
+                                <td colspan="6" class="loading-cell">
+                                    <div class="loading-spinner">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span>Loading users...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination">
+                    <span class="pagination-info" id="pagination-info">Showing 0 of 0 users</span>
+                    <div class="pagination-controls">
+                        <button class="pagination-btn" id="prev-page" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span class="pagination-current" id="current-page">1</span>
+                        <button class="pagination-btn" id="next-page" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Processing...</span>
+        </div>
+    </div>
+
+    <div id="delete-confirm-modal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: rgba(255, 255, 255, 0.15); padding: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.3); text-align: center; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); max-width: 400px; width: 90%;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 50px; color: #ff4d4f; margin-bottom: 20px;"></i>
+            <h2 style="color: white; margin-bottom: 15px; font-weight: 600;">Xác nhận Xóa!</h2>
+            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; line-height: 1.6;">Bạn có chắc chắn muốn xóa vĩnh viễn người dùng này không? Hành động này không thể hoàn tác.</p>
+            <div style="display: flex; gap: 15px;">
+                <button onclick="closeDeleteModal()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); padding: 12px 20px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; flex: 1;">Hủy</button>
+                <button onclick="executeDeleteUser()" style="background: #ff4d4f; color: white; border: none; padding: 12px 20px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; flex: 1;">Xóa ngay</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/admin.js"></script>
+</body>
+</html>

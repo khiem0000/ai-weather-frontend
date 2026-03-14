@@ -69,8 +69,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }, 1000);
                 } else {
-                    // Sai mật khẩu
-                    showToast(data.message || 'Email hoặc mật khẩu không đúng!', 'error');
+                    // Kiểm tra nếu tài khoản bị khóa
+                    if (data.message === "ACCOUNT_LOCKED") {
+                        // Hiện bảng kính mờ tuyệt đẹp
+                        document.getElementById('locked-modal').style.display = 'flex';
+                    } else {
+                        // Sai mật khẩu
+                        showToast(data.message || 'Email hoặc mật khẩu không đúng!', 'error');
+                    }
                     btnSubmit.innerHTML = 'Login';
                     btnSubmit.disabled = false;
                 }
