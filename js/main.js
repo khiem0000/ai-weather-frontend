@@ -700,14 +700,18 @@ async function fetchWeatherData(query) {
             return;
         }
 
-        // ĐỌC DỮ LIỆU JSON TRƯỚC
+// 1. ĐỌC DỮ LIỆU JSON TRƯỚC
         const data = await response.json();
         window.currentWeatherData = data; 
-        window.lastSearchedQuery = query; 
+        
+        // 2. TÌM TÊN THÀNH PHỐ THẬT NGAY LẬP TỨC (Dịch từ tọa độ ra tên)
+        const realCityName = data.location && data.location.name ? data.location.name : query;
+        
+        // 3. ĐÃ FIX LỖI TỌA ĐỘ: Chỉ lưu Tên Thật vào lịch sử, không lưu tọa độ
+        window.lastSearchedQuery = realCityName; 
 
-        // BÁO CÁO THÀNH CÔNG (Dùng data.location.name để lấy tên thật: "Can Tho", "Hanoi"...)
+        // 4. BÁO CÁO THÀNH CÔNG VỀ SQL
         if (typeof reportApiLog === 'function') {
-            const realCityName = data.location && data.location.name ? data.location.name : query;
             reportApiLog('WeatherAPI', 200, responseTime, realCityName);
         }
         
