@@ -705,25 +705,39 @@ async function fetchWeatherData(query) {
         const data = await response.json();
         window.currentWeatherData = data; 
         
-        // 2. LỌC TÊN THÀNH PHỐ CHUẨN (Khắc phục lỗi hiện Ấp/Xã)
-        let realCityName = data.location.name;
-        // Nếu API trả về Tỉnh/Thành phố trong cột "region" (VD: region = "Can Tho", name = "Ap Binh Thuong")
+        // ==========================================
+        // 2. LẤY TÊN TỈNH/THÀNH PHỐ ĐỘNG (Dành cho mọi nơi)
+        // ==========================================
+        let dynamicProvince = data.location.name;
+        // Nếu API có trường region (Tỉnh lớn), luôn ưu tiên lấy region
         if (data.location.region && data.location.region !== "") {
-            realCityName = data.location.region;
+            dynamicProvince = data.location.region; // Sẽ tự động là "Dong Thap", "Ba Ria - Vung Tau", "Can Tho"...
         }
+        
+        window.lastSearchedQuery = dynamicProvince; 
 
-        window.lastSearchedQuery = realCityName; 
+        // ==========================================
+        // 3. TỰ CHỮA LÀNH DỮ LIỆU CŨ BỊ LỖI ẤP/XÃ/TỌA ĐỘ
+        // ==========================================
+        let currentSavedCity = window.appSettings.city || "";
+        let cleanSavedCity = removeVietnameseTones(currentSavedCity).toLowerCase().trim();
+        
+        // Nhận diện dữ liệu rác trong máy người dùng: Bắt đầu bằng "ap ", "xa " hoặc là tọa độ
+        let isBadData = cleanSavedCity.startsWith("ap ") || cleanSavedCity.startsWith("xa ") || /^[0-9.-]+,[0-9.-]+$/.test(cleanSavedCity);
 
-        // 3. NẾU ĐANG DÙNG GPS -> CẬP NHẬT LÀM QUÊ QUÁN
-        if (window.isUpdatingHomeCity) {
-            window.appSettings.city = realCityName;
-            window.isUpdatingHomeCity = false; // Tắt cờ
-            if (typeof saveCurrentUserSettings === 'function') saveCurrentUserSettings(); // Lưu thẳng lên SQL
+        // Nếu người dùng bấm GPS (isUpdatingHomeCity) HOẶC máy đang bị nhiễm dữ liệu rác
+        if (window.isUpdatingHomeCity || isBadData) {
+            window.appSettings.city = dynamicProvince; // Ghi đè Tỉnh/Thành phố chuẩn vào cài đặt
+            window.isUpdatingHomeCity = false; 
+            if (typeof saveCurrentUserSettings === 'function') {
+                console.log("🛠️ Tự động cập nhật Tỉnh/Thành phố chuẩn lên SQL:", dynamicProvince);
+                saveCurrentUserSettings(); // Cập nhật thẳng lên DB
+            }
         }
 
         // 4. BÁO CÁO THÀNH CÔNG VỀ SQL
         if (typeof reportApiLog === 'function') {
-            reportApiLog('WeatherAPI', 200, responseTime, realCityName);
+            reportApiLog('WeatherAPI', 200, responseTime, dynamicProvince);
         }
         
         updateLastUpdatedTime();
@@ -2709,37 +2723,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1500); // 1500ms = 1.5 giây
 });
 
-// Hàm để Frontend báo cáo log về cho Backend (ĐÃ FIX BỘ LỌC TỌA ĐỘ)
+// Hàm để Frontend báo cáo log về cho Backend (BẢN CHUẨN KHÔNG ÉP CỨNG)
 async function reportApiLog(apiName, statusCode, responseTime, searchedLocation, errorMsg = null) {
     try {
         let userId = null;
-        let trueLocation = searchedLocation; // Mặc định là tên thành phố (VD: Can Tho) truyền vào
+        let trueLocation = searchedLocation; 
 
-        // Hàm kiểm tra xem chuỗi có phải là tọa độ không (VD: "10.0175,105.7255")
-        const isCoordinate = (str) => /^[0-9.-]+,[0-9.-]+$/.test(str);
-
-        // 1. Lục tìm ID và Vị trí thật trong hồ sơ tài khoản
+        // 1. Lấy thông tin tài khoản
         const accountStr = localStorage.getItem('currentAccount');
         if (accountStr) {
             const account = JSON.parse(accountStr);
             userId = account.id || null;
-            
-            // CHỈ LẤY SETTING NẾU NÓ KHÔNG PHẢI LÀ TỌA ĐỘ
-            if (account.settings && account.settings.city && !isCoordinate(account.settings.city)) {
+            if (account.settings && account.settings.city) {
                 trueLocation = account.settings.city;
             }
-        } 
-        // 2. Nếu chưa đăng nhập, thử lấy từ cài đặt web hiện tại
-        else if (window.appSettings && window.appSettings.city && !isCoordinate(window.appSettings.city)) {
+        } else if (window.appSettings && window.appSettings.city) {
             trueLocation = window.appSettings.city;
         }
 
-        // 3. Nếu trueLocation bằng cách nào đó vẫn dính tọa độ, chặn luôn!
-        if (isCoordinate(trueLocation)) {
+        // 2. Chốt chặn lọc tọa độ
+        if (/^[0-9.-]+,[0-9.-]+$/.test(trueLocation)) {
             trueLocation = "Unknown";
         }
 
-        // 4. Gửi dữ liệu SẠCH về Backend
+        // 3. Gửi dữ liệu về Backend
         await fetch('https://ai-weather-backend-f8q6.onrender.com/api/admin/log-api', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2748,7 +2755,7 @@ async function reportApiLog(apiName, statusCode, responseTime, searchedLocation,
                 apiName: apiName,
                 statusCode: statusCode,
                 responseTimeMs: responseTime,
-                location: trueLocation, // Đảm bảo 100% không còn tọa độ
+                location: trueLocation,
                 errorMessage: errorMsg
             })
         });
