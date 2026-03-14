@@ -701,14 +701,25 @@ async function fetchWeatherData(query) {
         }
 
 // 1. ĐỌC DỮ LIỆU JSON TRƯỚC
+        // 1. ĐỌC DỮ LIỆU JSON TRƯỚC
         const data = await response.json();
         window.currentWeatherData = data; 
         
-        // 2. TÌM TÊN THÀNH PHỐ THẬT NGAY LẬP TỨC (Dịch từ tọa độ ra tên)
-        const realCityName = data.location && data.location.name ? data.location.name : query;
-        
-        // 3. ĐÃ FIX LỖI TỌA ĐỘ: Chỉ lưu Tên Thật vào lịch sử, không lưu tọa độ
+        // 2. LỌC TÊN THÀNH PHỐ CHUẨN (Khắc phục lỗi hiện Ấp/Xã)
+        let realCityName = data.location.name;
+        // Nếu API trả về Tỉnh/Thành phố trong cột "region" (VD: region = "Can Tho", name = "Ap Binh Thuong")
+        if (data.location.region && data.location.region !== "") {
+            realCityName = data.location.region;
+        }
+
         window.lastSearchedQuery = realCityName; 
+
+        // 3. NẾU ĐANG DÙNG GPS -> CẬP NHẬT LÀM QUÊ QUÁN
+        if (window.isUpdatingHomeCity) {
+            window.appSettings.city = realCityName;
+            window.isUpdatingHomeCity = false; // Tắt cờ
+            if (typeof saveCurrentUserSettings === 'function') saveCurrentUserSettings(); // Lưu thẳng lên SQL
+        }
 
         // 4. BÁO CÁO THÀNH CÔNG VỀ SQL
         if (typeof reportApiLog === 'function') {
@@ -716,8 +727,6 @@ async function fetchWeatherData(query) {
         }
         
         updateLastUpdatedTime();
-        window.currentWeatherData = data; 
-        window.lastSearchedQuery = query; 
         
         updateLastUpdatedTime();
         const isF = window.appSettings.tempUnit === 'F';
@@ -2144,7 +2153,8 @@ async function saveCurrentUserSettings() {
         language: window.appSettings.language,
         tempUnit: window.appSettings.tempUnit,
         timeFormat: window.appSettings.timeFormat,
-        city: window.lastSearchedQuery || window.appSettings.city || 'Can Tho',
+        // ĐÃ FIX: Chỉ lấy vị trí gốc, không lấy lịch sử tìm kiếm (lastSearchedQuery) nữa
+        city: window.appSettings.city || 'Can Tho',
         notifySevere: document.querySelectorAll('.setting-toggle')[0]?.classList.contains('active'),
         notifyDaily: document.querySelectorAll('.setting-toggle')[1]?.classList.contains('active'),
         notifyPlanner: document.querySelectorAll('.setting-toggle')[2]?.classList.contains('active')
@@ -2420,35 +2430,15 @@ function reRenderWeatherUI() {
  * @param {string} fallbackCity - Tên thành phố mặc định khi GPS thất bại
  */
 function fetchWeatherByGPS(fallbackCity) {
-    console.log('📍 fetchWeatherByGPS called with fallback:', fallbackCity);
-    
-    // Kiểm tra trình duyệt có hỗ trợ Geolocation không
-    if (!navigator.geolocation) {
-        console.warn("⚠️ Trình duyệt không hỗ trợ Geolocation");
-        fetchWeatherData(fallbackCity);
-        return;
-    }
-    
-    // Yêu cầu vị trí người dùng
+    if (!navigator.geolocation) { fetchWeatherData(fallbackCity); return; }
     navigator.geolocation.getCurrentPosition(
-        // Success callback - Lấy được vị trí
         (position) => {
             const { latitude, longitude } = position.coords;
-            console.log('✅ GPS location obtained:', latitude, longitude);
-            // Gọi API với tọa độ lat,lon
+            window.isUpdatingHomeCity = true; // CỜ BÁO HIỆU: Đang dùng GPS
             fetchWeatherData(`${latitude},${longitude}`);
         },
-        // Error callback - Thất bại (user từ chối, timeout, lỗi mạng)
-        (error) => {
-            console.warn("⚠️ Lấy vị trí GPS thất bại:", error.message);
-            // Fallback về thành phố mặc định
-            fetchWeatherData(fallbackCity);
-        },
-        { 
-            enableHighAccuracy: true,  // Yêu cầu GPS chính xác cao
-            timeout: 5000,            // Chờ tối đa 5 giây
-            maximumAge: 0             // Không dùng cache vị trí cũ
-        }
+        (error) => { fetchWeatherData(fallbackCity); },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
 }
 
@@ -2482,25 +2472,15 @@ document.addEventListener('DOMContentLoaded', function() {
 // Moved to initAccountSystem to ensure it runs AFTER account/tasks are loaded 
 
 function getPreciseLocation() {
-    // IMPORTANT: Only fetch GPS location if user hasn't already set a city in onboarding
     const currentAccount = getCurrentAccount();
-    console.log('🗺️ getPreciseLocation called - Checking if city already set...');
-    console.log('🗺️ currentAccount.settings.city:', currentAccount?.settings?.city);
-    
-    // If user already has a city selection from onboarding, DON'T override with GPS
-    if (currentAccount?.settings?.city) {
-        console.log('✅ City already set by user, skipping GPS location fetch');
-        return;
-    }
-    
-    console.log('🗺️ No city set, requesting GPS location...');
+    if (currentAccount?.settings?.city) return;
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             pos => {
-                console.log('📍 GPS location obtained:', pos.coords.latitude, pos.coords.longitude);
+                window.isUpdatingHomeCity = true; // CỜ BÁO HIỆU: Đang dùng GPS
                 fetchWeatherData(`${pos.coords.latitude},${pos.coords.longitude}`);
             },
-            err => console.log("User denied GPS. Kept default city."), { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            err => console.log("User denied GPS."), { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
     }
 }
@@ -2729,30 +2709,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1500); // 1500ms = 1.5 giây
 });
 
-// Hàm để Frontend báo cáo log về cho Backend (ĐÃ FIX: BẮT VỊ TRÍ THẬT)
+// Hàm để Frontend báo cáo log về cho Backend (ĐÃ FIX BỘ LỌC TỌA ĐỘ)
 async function reportApiLog(apiName, statusCode, responseTime, searchedLocation, errorMsg = null) {
     try {
         let userId = null;
-        // Tạm lấy vị trí tìm kiếm làm phương án dự phòng
-        let trueLocation = searchedLocation; 
+        let trueLocation = searchedLocation; // Mặc định là tên thành phố (VD: Can Tho) truyền vào
 
-        // 1. Lục tìm ID và Vị trí thật (Home City) trong hồ sơ tài khoản
+        // Hàm kiểm tra xem chuỗi có phải là tọa độ không (VD: "10.0175,105.7255")
+        const isCoordinate = (str) => /^[0-9.-]+,[0-9.-]+$/.test(str);
+
+        // 1. Lục tìm ID và Vị trí thật trong hồ sơ tài khoản
         const accountStr = localStorage.getItem('currentAccount');
         if (accountStr) {
             const account = JSON.parse(accountStr);
             userId = account.id || null;
             
-            // ÉP GHI ĐÈ: Sử dụng vị trí thật mà người dùng đã thiết lập/định vị
-            if (account.settings && account.settings.city) {
+            // CHỈ LẤY SETTING NẾU NÓ KHÔNG PHẢI LÀ TỌA ĐỘ
+            if (account.settings && account.settings.city && !isCoordinate(account.settings.city)) {
                 trueLocation = account.settings.city;
             }
         } 
         // 2. Nếu chưa đăng nhập, thử lấy từ cài đặt web hiện tại
-        else if (window.appSettings && window.appSettings.city) {
+        else if (window.appSettings && window.appSettings.city && !isCoordinate(window.appSettings.city)) {
             trueLocation = window.appSettings.city;
         }
 
-        // 3. Gửi dữ liệu về Backend
+        // 3. Nếu trueLocation bằng cách nào đó vẫn dính tọa độ, chặn luôn!
+        if (isCoordinate(trueLocation)) {
+            trueLocation = "Unknown";
+        }
+
+        // 4. Gửi dữ liệu SẠCH về Backend
         await fetch('https://ai-weather-backend-f8q6.onrender.com/api/admin/log-api', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2761,7 +2748,7 @@ async function reportApiLog(apiName, statusCode, responseTime, searchedLocation,
                 apiName: apiName,
                 statusCode: statusCode,
                 responseTimeMs: responseTime,
-                location: trueLocation, // CHỈ GỬI VỊ TRÍ THẬT CỦA USER
+                location: trueLocation, // Đảm bảo 100% không còn tọa độ
                 errorMessage: errorMsg
             })
         });
