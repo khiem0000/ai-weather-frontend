@@ -6,46 +6,21 @@
 const API_BASE_URL = 'https://ai-weather-backend-f8q6.onrender.com/api/admin';
 const SYSTEM_NOTIF_URL = 'https://ai-weather-backend-f8q6.onrender.com/api/notifications/system';
 
+// BIẾN TOÀN CỤC CHO USERS
 let currentPage = 1;
 let totalPages = 1;
 let users = [];
 let filteredUsers = [];
 
+// BIẾN TOÀN CỤC CHO SUPPORT (ĐÃ FIX THIẾU BIẾN)
+const ticketsTbody = document.getElementById('support-table-body');
+let allTickets = [];
+let filteredTickets = [];
+let currentTicketId = null;
+let loading = false;
+
 function getToken() { 
-    return localStorage.getItem('token'); 
-}
-
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) { 
-        alert(message); 
-        return; 
-    }
-    const icons = { 
-        success: 'fa-check-circle', 
-        error: 'fa-times-circle', 
-        warning: 'fa-exclamation-circle', 
-        info: 'fa-info-circle' 
-    };
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<i class="fas ${icons[type]}"></i><span class="toast-message">${message}</span>`;
-    container.appendChild(toast);
-    
-    setTimeout(() => { 
-        toast.style.animation = 'slideOut 0.3s ease forwards'; 
-        setTimeout(() => toast.remove(), 300); 
-    }, 4000);
-}
-
-function showLoading(text = 'Processing...') { 
-    const overlay = document.getElementById('loading-overlay'); 
-    if (overlay) overlay.classList.add('show'); 
-}
-
-function hideLoading() { 
-    const overlay = document.getElementById('loading-overlay'); 
-    if (overlay) overlay.classList.remove('show'); 
+    return localStorage.getItem('token') || localStorage.getItem('adminToken'); 
 }
 
 function formatDate(dateString) { 
@@ -264,7 +239,7 @@ async function clearBroadcast() {
 }
 
 // ============================================
-// SETTINGS & MAINTENANCE (ĐÃ FIX: XÓA CHỖ THỪA)
+// SETTINGS & MAINTENANCE
 // ============================================
 async function fetchSettings() {
     try {
@@ -278,9 +253,8 @@ async function fetchSettings() {
                 const weatherEl = document.getElementById('setting-weather');
                 if (geminiEl) geminiEl.value = data.settings.gemini_api_key || '';
                 if (weatherEl) weatherEl.value = data.settings.weather_api_key || '';
-                // Thêm dòng này để load key thứ 3
                 const wApiEl = document.getElementById('setting-weatherapi');
-                if (wApiEl) wApiEl.value = data.settings.weatherapi_key || ''; // Giả sử backend lưu cột này
+                if (wApiEl) wApiEl.value = data.settings.weatherapi_key || ''; 
                 
                 const mtMain = document.getElementById('maintenance-toggle'); 
                 if (mtMain) mtMain.checked = (data.settings.maintenance_mode === 1); 
@@ -289,20 +263,16 @@ async function fetchSettings() {
     } catch (e) { console.error('Lỗi fetchSettings:', e); }
 }
 
-
 async function saveSettings() {
     showLoading('Đang lưu cài đặt...'); const token = getToken();
     try {
         const mtMain = document.getElementById('maintenance-toggle'); 
         const isMaintained = (mtMain && mtMain.checked);
         
-        const geminiVal = document.getElementById('setting-gemini') ? document.getElementById('setting-gemini').value : '';
-        const weatherVal = document.getElementById('setting-weather') ? document.getElementById('setting-weather').value : '';
-        
         const body = {
             gemini_api_key: document.getElementById('setting-gemini').value,
             weather_api_key: document.getElementById('setting-weather').value,
-            weatherapi_key: document.getElementById('setting-weatherapi').value, // Thêm key mới
+            weatherapi_key: document.getElementById('setting-weatherapi').value,
             maintenance_mode: isMaintained ? 1 : 0
         };
         const response = await fetch(`${API_BASE_URL}/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(body) });
@@ -310,9 +280,8 @@ async function saveSettings() {
     } catch (e) { showToast('Lỗi lưu cài đặt', 'error'); } finally { hideLoading(); }
 }
 
-
 // ============================================
-// KIỂM TRA API KEY SIÊU CẤP (CÓ ĐỌC LỖI CHI TIẾT)
+// KIỂM TRA API KEY SIÊU CẤP
 // ============================================
 async function checkApiKey(type, btn) {
     const inputId = type === 'weather' ? 'setting-weather' : (type === 'gemini' ? 'setting-gemini' : 'setting-weatherapi');
@@ -360,7 +329,6 @@ async function checkApiKey(type, btn) {
         showToast(`❌ ${type.toUpperCase()}: ${errorMsg}`, 'error');
         btn.style.background = '#f59e0b';
     } finally {
-        // LUÔN LUÔN reset nút sau ĐÚNG 3 GIÂY
         setTimeout(() => {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -368,7 +336,6 @@ async function checkApiKey(type, btn) {
         }, 3000);
     }
 }
-
 
 function resetBtn(btn, text) {
     if (!btn) return;
@@ -399,22 +366,19 @@ async function refreshDashboardApiStatus() {
     const token = getToken();
     if(!token) return;
     try {
-        // ... (lấy settings từ DB)
         const response = await fetch(`${API_BASE_URL}/settings`, { headers: { 'Authorization': `Bearer ${token}` } });
         if(response.ok) {
             const data = await response.json();
             if (data.success && data.settings) {
                 const wOk = await checkApiHealthSilent('weather', data.settings.weather_api_key);
                 const gOk = await checkApiHealthSilent('gemini', data.settings.gemini_api_key);
-                const waOk = await checkApiHealthSilent('weatherapi', data.settings.weatherapi_key); // Check key thứ 3
+                const waOk = await checkApiHealthSilent('weatherapi', data.settings.weatherapi_key); 
 
-                // Cập nhật đèn báo WeatherAPI (Backup)
                 const waDot = document.getElementById('dash-weatherapi-dot');
                 const waText = document.getElementById('dash-weatherapi-text');
                 if(waDot) waDot.style.background = waOk ? '#10b981' : '#ef4444';
                 if(waText) waText.innerHTML = `WeatherAPI: <strong style="color:${waOk ? '#10b981' : '#ef4444'}">${waOk ? 'Online' : 'Offline'}</strong>`;
 
-                // Cập nhật giao diện: Xanh = Online, Đỏ = Offline
                 const wDot = document.getElementById('dash-weather-dot'); const wText = document.getElementById('dash-weather-text');
                 const gDot = document.getElementById('dash-gemini-dot'); const gText = document.getElementById('dash-gemini-text');
                 
@@ -428,14 +392,13 @@ async function refreshDashboardApiStatus() {
     } catch(e) { console.error('Lỗi check health:', e); }
 }
 
-
 // ============================================
-// INITIALIZATION
+// INITIALIZATION QUAN TRỌNG NHẤT
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
     fetchUsers();
     fetchSettings();
-    refreshDashboardApiStatus(); // Chạy check tự động khi vừa vào web
+    refreshDashboardApiStatus();
     
     const searchInput = document.getElementById('search-users');
     if (searchInput) {
@@ -451,13 +414,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const menuItems = document.querySelectorAll('.menu-item');
     menuItems.forEach(item => {
-        item.addEventListener('click', function() {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
             const page = this.getAttribute('data-page');
+            if(!page) return;
+
             document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
             const target = document.getElementById(`${page}-content`); 
             if (target) target.style.display = 'block';
             
-            menuItems.forEach(m => m.classList.remove('active')); this.classList.add('active');
+            menuItems.forEach(m => m.classList.remove('active')); 
+            this.classList.add('active');
+
+            const titles = {
+                dashboard: 'Dashboard Hệ thống',
+                users: 'Quản lý Người dùng',
+                analytics: 'Thống kê & Hiệu suất',
+                settings: 'Cài đặt API',
+                support: 'Trung tâm Hỗ trợ (Support)'
+            };
+            const pageTitle = document.getElementById('page-title');
+            if(pageTitle && titles[page]) pageTitle.textContent = titles[page];
             
             if (page === 'settings') fetchSettings();
             if (page === 'users') fetchUsers();
@@ -466,16 +443,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 refreshDashboardApiStatus();
             }
             
-            // DÒNG QUAN TRỌNG: Kích hoạt tải dữ liệu khi vào tab Analytics
             if (page === 'analytics') { 
                 initAnalyticsCharts(); 
+            } else {
+                clearAnalyticsInterval(); // ĐÃ CÓ HÀM NÀY Ở DƯỚI
             }
+            
+            if (page === 'support') fetchSupportTickets();
         });
     });
 
     if (document.getElementById('btn-logout')) document.getElementById('btn-logout').addEventListener('click', () => { if (confirm('Đăng xuất khỏi hệ thống?')) { localStorage.clear(); window.location.href = 'login.html'; } });
 
-    // Gạt bảo trì (Chỉ có 1 nút duy nhất ở Dashboard)
+    // Gạt bảo trì
     const toggleBtn = document.getElementById('maintenance-toggle'); 
     if (toggleBtn) {
         toggleBtn.addEventListener('click', function(e) {
@@ -497,108 +477,122 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================
 // REAL ANALYTICS DATA INTEGRATION
 // ============================================
-let analyticsCharts = { traffic: null, error: null };
+let analyticsCharts = { traffic: null };
+let analyticsInterval = null; 
 
 async function initAnalyticsCharts() {
-    const timeFilter = document.getElementById('time-filter');
-    const period = timeFilter ? timeFilter.value : 'today';
-    await fetchAnalyticsData(period);
+    if (analyticsInterval) clearInterval(analyticsInterval);
+    await fetchAnalyticsData();
+    analyticsInterval = setInterval(fetchAnalyticsData, 5000);
 }
 
-async function fetchAnalyticsData(timeRange) {
+// FIX LỖI 1: KHAI BÁO HÀM DỌN DẸP ANALYTICS ĐỂ KHÔNG BỊ CRASH KHI CHUYỂN TAB
+function clearAnalyticsInterval() {
+    if (analyticsInterval) {
+        clearInterval(analyticsInterval);
+        analyticsInterval = null;
+    }
+}
+
+async function fetchAnalyticsData() {
     const token = getToken();
     if (!token) return;
 
     try {
-        // Gọi API thật từ Backend mà BlackboxAI vừa tạo
-        const response = await fetch(`${API_BASE_URL}/analytics?range=${timeRange}`, {
+        const response = await fetch(`${API_BASE_URL}/analytics`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
         const data = await response.json();
-        
         if (data.success) {
             updateAnalyticsUI(data);
         }
     } catch (error) {
         console.error('Lỗi tải Analytics:', error);
-        showToast('Không thể tải dữ liệu thống kê!', 'error');
     }
 }
 
 function updateAnalyticsUI(data) {
-    // 1. Cập nhật thẻ KPI
     if (document.querySelector('[data-kpi="total"]')) document.querySelector('[data-kpi="total"]').textContent = data.totalRequests || 0;
     if (document.querySelector('[data-kpi="success"]')) document.querySelector('[data-kpi="success"]').textContent = (data.successRate || 0) + '%';
     if (document.querySelector('[data-kpi="latency"]')) document.querySelector('[data-kpi="latency"]').textContent = (data.avgLatency || 0) + 'ms';
-    // Active Sessions tạm thời đếm số user đang không bị khóa
-    if (document.querySelector('[data-kpi="sessions"]')) document.querySelector('[data-kpi="sessions"]').textContent = users.filter(u => !u.is_locked).length || 1;
+    if (document.querySelector('[data-kpi="sessions"]')) document.querySelector('[data-kpi="sessions"]').textContent = data.activeSessions || 0;
 
-    // 2. Cập nhật Biểu đồ đường (Traffic)
     const trafficCtx = document.getElementById('apiTrafficChart');
     if (trafficCtx && data.apiTraffic) {
-        if (analyticsCharts.traffic) analyticsCharts.traffic.destroy();
-        analyticsCharts.traffic = new Chart(trafficCtx, {
-            type: 'line',
-            data: {
-                labels: data.apiTraffic.labels || [],
-                datasets: [
-                    { label: 'OpenWeather', data: data.apiTraffic.openweather || [], borderColor: '#4facfe', backgroundColor: 'rgba(79, 172, 254, 0.1)', tension: 0.4, fill: true },
-                    { label: 'WeatherAPI', data: data.apiTraffic.weatherapi || [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.4, fill: true },
-                    { label: 'Gemini', data: data.apiTraffic.gemini || [], borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.4, fill: true }
-                ]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
-        });
-    }
-
-    // 3. Cập nhật Biểu đồ tròn (Lỗi)
-    const errorCtx = document.getElementById('errorPieChart');
-    if (errorCtx && data.successRate !== undefined) {
-        if (analyticsCharts.error) analyticsCharts.error.destroy();
-        const successVal = parseFloat(data.successRate);
-        const errorVal = 100 - successVal;
-        
-        analyticsCharts.error = new Chart(errorCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Thành công', 'Lỗi (Từ chối/Hết key)'],
-                datasets: [{
-                    data: [successVal, errorVal],
-                    backgroundColor: ['#10b981', '#ef4444'],
-                    borderWidth: 0, hoverOffset: 8
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-        });
-    }
-
-    // 4. Cập nhật Top Locations
-    const locationsList = document.querySelector('.locations-list');
-    if (locationsList && data.topLocations) {
-        if (data.topLocations.length === 0) {
-            locationsList.innerHTML = '<p style="text-align:center; color:#9ca3af; padding: 20px;">Chưa có dữ liệu vị trí</p>';
+        if (analyticsCharts.traffic) {
+            analyticsCharts.traffic.data.labels = data.apiTraffic.labels || [];
+            analyticsCharts.traffic.data.datasets[0].data = data.apiTraffic.openweather || [];
+            analyticsCharts.traffic.data.datasets[1].data = data.apiTraffic.weatherapi || [];
+            analyticsCharts.traffic.data.datasets[2].data = data.apiTraffic.gemini || [];
+            analyticsCharts.traffic.update('none'); 
         } else {
-            locationsList.innerHTML = data.topLocations.map(loc => `
-                <div class="location-item">
-                    <span class="location-name">${loc.name}</span>
-                    <div class="progress-wrapper">
-                        <div class="progress-bar" style="width: ${loc.percentage}%"></div>
-                    </div>
-                    <span class="location-count">${loc.percentage}%</span>
-                </div>
-            `).join('');
+            analyticsCharts.traffic = new Chart(trafficCtx, {
+                type: 'line',
+                data: {
+                    labels: data.apiTraffic.labels || [],
+                    datasets: [
+                        { label: 'OpenWeather', data: data.apiTraffic.openweather || [], borderColor: '#4facfe', backgroundColor: 'rgba(79, 172, 254, 0.1)', tension: 0.4, fill: true },
+                        { label: 'WeatherAPI', data: data.apiTraffic.weatherapi || [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.4, fill: true },
+                        { label: 'Gemini', data: data.apiTraffic.gemini || [], borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.4, fill: true }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } }, animation: false } 
+            });
         }
     }
 
-    // 5. Cập nhật Error Logs
+    if (data.systemHealth) {
+        const cpuEl = document.getElementById('sh-cpu');
+        const cpuBar = document.getElementById('sh-cpu-bar');
+        const memEl = document.getElementById('sh-mem');
+        const uptimeEl = document.getElementById('sh-uptime');
+        const renderSpeedEl = document.getElementById('sh-render-speed');
+
+        if (cpuEl) cpuEl.textContent = `${data.systemHealth.cpuPercent}%`;
+        if (cpuBar) {
+            cpuBar.style.width = `${data.systemHealth.cpuPercent}%`;
+            cpuBar.style.background = data.systemHealth.cpuPercent > 80 ? 'var(--danger)' : 'var(--primary-blue)';
+        }
+        if (memEl) memEl.textContent = `${data.systemHealth.memoryUsedGB} GB`;
+        if (uptimeEl) uptimeEl.textContent = data.systemHealth.uptime;
+        if (renderSpeedEl) renderSpeedEl.textContent = `${data.avgLatency || 0} ms`;
+    }
+
+    const apiPerfList = document.getElementById('api-performance-list');
+    if (apiPerfList && data.apiPerformance) {
+        if (data.apiPerformance.length === 0) {
+            apiPerfList.innerHTML = '<p style="text-align:center; color:#9ca3af; padding: 20px;">Chưa có dữ liệu API</p>';
+        } else {
+            const sortedApis = data.apiPerformance.sort((a, b) => a.avg_time - b.avg_time);
+            const maxTime = Math.max(...sortedApis.map(a => a.avg_time), 1); 
+
+            apiPerfList.innerHTML = sortedApis.map(api => {
+                const widthPercent = (api.avg_time / maxTime) * 100;
+                let colorClass = '#4facfe'; 
+                let apiNameLower = (api.api_name || '').toLowerCase();
+                if (apiNameLower.includes('gemini')) colorClass = '#f59e0b'; 
+                else if (apiNameLower.includes('weatherapi')) colorClass = '#10b981'; 
+                
+                return `
+                    <div class="location-item" style="display: flex; align-items: center; padding: 10px 0;">
+                        <span class="location-name" style="min-width: 100px;">${api.api_name}</span>
+                        <div class="progress-wrapper" style="flex:1; background: var(--gray-200); height: 8px; border-radius: 4px; margin: 0 10px;">
+                            <div class="progress-bar" style="width: ${widthPercent}%; height: 100%; background: ${colorClass}; border-radius: 4px;"></div>
+                        </div>
+                        <span class="location-count">${api.avg_time} ms</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
     const logsTbody = document.querySelector('.error-logs-table tbody');
     if (logsTbody && data.recentErrors) {
         if (data.recentErrors.length === 0) {
-            logsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color: #10b981;"><i class="fas fa-shield-check"></i> Tuyệt vời! Hệ thống không có lỗi nào.</td></tr>';
+            logsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px; color: #10b981;"><i class="fas fa-shield-check"></i> Không có lỗi nào.</td></tr>';
         } else {
             logsTbody.innerHTML = data.recentErrors.map(err => {
-                const timeStr = new Date(err.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                const timeStr = new Date(err.created_at).toLocaleTimeString('vi-VN');
                 const badgeClass = err.status_code >= 500 ? 'warning' : 'error';
                 return `
                     <tr>
@@ -613,22 +607,297 @@ function updateAnalyticsUI(data) {
     }
 }
 
-// Bắt sự kiện khi đổi bộ lọc thời gian
-document.addEventListener('change', function(e) {
-    if (e.target.id === 'time-filter') {
-        fetchAnalyticsData(e.target.value);
+// ============================================
+// QUẢN LÝ HỖ TRỢ (SUPPORT TICKETS)
+// ============================================
+
+async function fetchSupportTickets() {
+    const token = getToken();
+    if (!token) return;
+    if (loading) return;
+    loading = true;
+
+    if (ticketsTbody) {
+        ticketsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px;"><i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #4facfe;"></i><br>Đang tải dữ liệu...</td></tr>`;
     }
-});
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/support`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            allTickets = data.tickets || [];
+            renderTicketTable();
+        }
+    } catch (error) {
+        console.error("Lỗi fetch Support:", error);
+    } finally {
+        loading = false;
+    }
+}
+
+function renderTicketTable() {
+    if (!ticketsTbody) return;
+
+    if (allTickets.length === 0) {
+        ticketsTbody.innerHTML = `<tr><td colspan="5"><div class="empty-state" style="text-align:center; padding: 40px;"><i class="fas fa-inbox" style="font-size: 32px; color: var(--gray-400);"></i><h3 style="margin-top: 10px; color: var(--gray-500);">Không có phiếu hỗ trợ nào</h3></div></td></tr>`;
+        return;
+    }
+
+    const statusMap = {
+        'pending': { text: 'ĐANG CHỜ', color: 'var(--warning)', bg: 'rgba(245, 158, 11, 0.2)' },
+        'in_progress': { text: 'ĐANG XỬ LÝ', color: 'var(--primary-blue)', bg: 'rgba(79, 172, 254, 0.2)' },
+        'resolved': { text: 'ĐÃ XỬ LÝ', color: 'var(--success)', bg: 'rgba(16, 185, 129, 0.2)' },
+        'rejected': { text: 'TỪ CHỐI', color: 'var(--danger)', bg: 'rgba(239, 68, 68, 0.2)' }
+    };
+
+    ticketsTbody.innerHTML = allTickets.map(ticket => {
+        const st = statusMap[ticket.status] || statusMap['pending'];
+        const statusBadge = `<span class="badge" style="background: ${st.bg}; color: ${st.color}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold;">${st.text}</span>`;
+        
+        let actionBtns = `
+            <button class="action-btn" onclick="openTicketDetails(${ticket.id})" title="Xem chi tiết" style="background: transparent; border: none; cursor: pointer; color: #4facfe; font-size: 16px; margin: 0 5px;">
+                <i class="fas fa-eye"></i>
+            </button>
+        `;
+
+        if (ticket.status !== 'resolved' && ticket.status !== 'rejected') {
+            actionBtns += `
+                <button class="action-btn" onclick="changeTicketStatus(${ticket.id}, 'resolved')" title="Đánh dấu Đã xử lý" style="background: transparent; border: none; cursor: pointer; color: var(--success); font-size: 16px; margin: 0 5px;">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="action-btn" onclick="changeTicketStatus(${ticket.id}, 'rejected')" title="Từ chối hỗ trợ" style="background: transparent; border: none; cursor: pointer; color: var(--danger); font-size: 16px; margin: 0 5px;">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+        }
+        
+        return `
+            <tr>
+                <td style="padding: 12px 15px;"><strong>${ticket.email}</strong></td>
+                <td style="padding: 12px 15px;">${ticket.title}</td>
+                <td style="padding: 12px 15px;">${statusBadge}</td>
+                <td style="padding: 12px 15px;">${new Date(ticket.created_at).toLocaleDateString('vi-VN')}</td>
+                <td style="padding: 12px 15px; text-align: center;">
+                    <div style="display: flex; justify-content: center;">${actionBtns}</div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function openTicketDetails(ticketId) {
+    const token = getToken();
+    if (!token) return;
+    
+    if(typeof showLoading === 'function') showLoading('Đang tải chi tiết...');
+    currentTicketId = ticketId;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/support/${ticketId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (data.success && data.ticket) {
+            const ticket = Array.isArray(data.ticket) ? data.ticket[0] : data.ticket;
+            
+            if(!ticket) throw new Error("Dữ liệu rỗng");
+
+            document.getElementById('ticket-modal-title').textContent = ticket.title || 'Không có tiêu đề';
+            document.getElementById('ticket-modal-email').textContent = ticket.email || '';
+            document.getElementById('ticket-modal-date').textContent = ticket.created_at ? new Date(ticket.created_at).toLocaleString('vi-VN') : '';
+            document.getElementById('ticket-modal-message').textContent = ticket.message || '';
+            
+            const imgContainer = document.getElementById('ticket-modal-images');
+            if(imgContainer) {
+                imgContainer.innerHTML = '';
+                [ticket.image1, ticket.image2, ticket.image3].forEach(img => {
+                    if (img && img.trim() !== '') {
+                        imgContainer.innerHTML += `<img src="${img}" style="height: 100px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); object-fit: cover; cursor: pointer; margin-right: 10px;" onclick="window.open(this.src)">`;
+                    }
+                });
+            }
+
+            const replyBox = document.getElementById('ticket-reply-text');
+            const btnSubmit = document.getElementById('btn-submit-reply'); 
+
+            if(replyBox) {
+                if (ticket.status === 'resolved' || ticket.status === 'rejected') {
+                    replyBox.value = ticket.admin_reply || `Thư ở trạng thái: ${ticket.status.toUpperCase()}`;
+                    replyBox.disabled = true;
+                    if(btnSubmit) btnSubmit.style.display = 'none';
+                } else {
+                    replyBox.value = ticket.admin_reply || ''; 
+                    replyBox.disabled = false;
+                    if(btnSubmit) btnSubmit.style.display = 'inline-block';
+                }
+            }
+
+            const modal = document.getElementById('ticket-detail-modal');
+            if(modal) {
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+            }
+        }
+    } catch (error) {
+        console.error("Lỗi load details:", error);
+        if(typeof showToast === 'function') showToast("Lỗi tải chi tiết thư", "error");
+    } finally {
+        if(typeof hideLoading === 'function') hideLoading();
+    }
+}
+
+function closeTicketModal() {
+    const modal = document.getElementById('ticket-detail-modal');
+    if(modal) {
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; }, 300);
+    }
+    currentTicketId = null;
+}
+
+async function submitTicketReply() {
+    const token = getToken();
+    if (!token || !currentTicketId) return;
+    
+    const replyText = document.getElementById('ticket-reply-text')?.value.trim();
+    if (!replyText) {
+        if(typeof showToast === 'function') showToast("Vui lòng nhập nội dung phản hồi!", "warning");
+        return;
+    }
+
+    if(typeof showLoading === 'function') showLoading('Đang gửi phản hồi...');
+    try {
+        const response = await fetch(`${API_BASE_URL}/support/${currentTicketId}/reply`, {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ replyMessage: replyText }) 
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            if(typeof showToast === 'function') showToast("Đã gửi phản hồi thành công!", "success");
+            closeTicketModal();
+            fetchSupportTickets();
+        } else {
+            if(typeof showToast === 'function') showToast(data.message || "Lỗi khi gửi", "error");
+        }
+    } catch (error) {
+        if(typeof showToast === 'function') showToast("Lỗi kết nối", "error");
+    } finally {
+        if(typeof hideLoading === 'function') hideLoading();
+    }
+}
+
+async function changeTicketStatus(ticketId, newStatus) {
+    const actionName = newStatus === 'resolved' ? 'ĐÁNH DẤU ĐÃ XỬ LÝ' : 'TỪ CHỐI';
+    if (!confirm(`Bạn có chắc chắn muốn ${actionName} yêu cầu này không?`)) return;
+
+    const token = getToken();
+    if(typeof showLoading === 'function') showLoading('Đang cập nhật...');
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/support/${ticketId}/status`, {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            if(typeof showToast === 'function') showToast("Đã cập nhật trạng thái!", "success");
+            fetchSupportTickets(); 
+        } else {
+            if(typeof showToast === 'function') showToast(data.message || "Lỗi cập nhật", "error");
+        }
+    } catch (error) {
+        if(typeof showToast === 'function') showToast("Lỗi kết nối máy chủ", "error");
+    } finally {
+        if(typeof hideLoading === 'function') hideLoading();
+    }
+}
+
+// ==========================================
+// UTILITIES: TOAST & LOADING (ĐÃ FIX TRÙNG LẶP)
+// ==========================================
+
+function showLoading(text = 'Đang xử lý...') {
+    const overlay = document.getElementById('loading-overlay');
+    const textEl = document.getElementById('loading-text');
+    if (overlay) {
+        if (textEl) textEl.textContent = text;
+        overlay.classList.add('show');
+        overlay.style.opacity = '1';
+        overlay.style.visibility = 'visible';
+    }
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.classList.remove('show');
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.style.visibility = 'hidden', 300);
+    }
+}
+
+function showToast(message, type = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        background: ${type === 'success' ? 'rgba(16, 185, 129, 0.95)' : (type === 'warning' ? 'rgba(245, 158, 11, 0.95)' : 'rgba(239, 68, 68, 0.95)')};
+        color: white; padding: 12px 24px; border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3); backdrop-filter: blur(10px);
+        display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500;
+        transform: translateX(120%); transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    `;
+    const icon = type === 'success' ? 'fa-check-circle' : (type === 'warning' ? 'fa-exclamation-triangle' : 'fa-times-circle');
+    toast.innerHTML = `<i class="fas ${icon}" style="font-size: 18px;"></i> <span>${message}</span>`;
+    
+    container.appendChild(toast);
+    
+    requestAnimationFrame(() => setTimeout(() => { toast.style.transform = 'translateX(0)'; }, 10));
+    setTimeout(() => {
+        toast.style.transform = 'translateX(120%)';
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
+
+// Global exposure để các nút HTML gọi được
+window.showToast = showToast;
+window.showLoading = showLoading;
+window.hideLoading = hideLoading;
 
 // Global exposure
-window.toggleLock = toggleLock;
-window.changeRole = changeRole;
-window.deleteUser = deleteUser;
-window.closeDeleteModal = closeDeleteModal;
-window.executeDeleteUser = executeDeleteUser;
-window.sendBroadcast = sendBroadcast;
-window.clearBroadcast = clearBroadcast;
-window.saveSettings = saveSettings;
-window.checkApiKey = checkApiKey;
-window.initAnalyticsCharts = initAnalyticsCharts;
+window.toggleLock = typeof toggleLock !== 'undefined' ? toggleLock : () => {};
+window.changeRole = typeof changeRole !== 'undefined' ? changeRole : () => {};
+window.deleteUser = typeof deleteUser !== 'undefined' ? deleteUser : () => {};
+window.closeDeleteModal = typeof closeDeleteModal !== 'undefined' ? closeDeleteModal : () => {};
+window.executeDeleteUser = typeof executeDeleteUser !== 'undefined' ? executeDeleteUser : () => {};
+window.sendBroadcast = typeof sendBroadcast !== 'undefined' ? sendBroadcast : () => {};
+window.clearBroadcast = typeof clearBroadcast !== 'undefined' ? clearBroadcast : () => {};
+window.saveSettings = typeof saveSettings !== 'undefined' ? saveSettings : () => {};
+window.checkApiKey = typeof checkApiKey !== 'undefined' ? checkApiKey : () => {};
 
+window.initAnalyticsCharts = initAnalyticsCharts;
+window.fetchSupportTickets = fetchSupportTickets;
+window.openTicketDetails = openTicketDetails;
+window.closeTicketModal = closeTicketModal;
+window.submitTicketReply = submitTicketReply;
+window.changeTicketStatus = changeTicketStatus;

@@ -326,13 +326,19 @@
                             <i class="fas fa-bell" style="opacity: 0.7;"></i>
                             <div class="notification-badge" style="top: 0; right: 0;"></div>
                         </div>
+                        <div id="settings-headphone-btn" class="glass-panel-light" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;" title="Hỗ trợ / Lắng nghe">
+                        <i class="fas fa-headset" style="opacity: 0.7;"></i>
+                        </div>
                         
                         <!-- User Menu Container -->
                         <div id="user-menu-container" style="display: flex; align-items: center; gap: 8px; padding-left: 10px; cursor: pointer; position: relative;">
                             <img id="header-avatar" src="https://ui-avatars.com/api/?name=TK&background=4facfe&color=fff" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 10px rgba(79, 172, 254, 0.4); object-fit: cover;">
                             <i class="fas fa-chevron-down" style="font-size: 12px; opacity: 0.5;"></i>
                         </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+
                         
+    
                         <!-- User Dropdown Menu -->
                         <div id="user-dropdown" class="glass-panel-light" style="position: absolute; top: 60px; right: 10px; width: 280px; background: rgba(255,255,255,0.95); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 10000; display: none; overflow: hidden;">
                             <div id="dropdown-accounts-list" style="max-height: 250px; overflow-y: auto; padding: 8px 0;"></div>
@@ -772,6 +778,101 @@
 
     <!-- PWA Install Script -->
     <script src="./js/pwa-install.js"></script>
+
+    <div id="support-modal-overlay" class="modal-overlay">
+        <div class="modal-box support-box" style="max-width: 550px; width: 90%; padding: 25px; background: rgba(15, 15, 35, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: white; position: relative;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin:0; display:flex; align-items:center; gap:10px; font-size: 18px;">
+                    <i class="fas fa-headset" style="color: #4facfe;"></i> Trung Tâm Hỗ Trợ
+                </h3>
+                <button class="btn-close-modal" id="btn-close-support" style="background: transparent; border: none; color: white; font-size: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="planner-navbar" style="padding: 0 0 15px 0; height: auto; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+                <div class="nav-pills-light" style="gap: 20px; width: 100%; display: flex;">
+                    <div class="nav-item-light active" id="tab-send-support" style="font-size: 13px; cursor: pointer; padding: 8px 15px; border-radius: 20px; background: rgba(79, 172, 254, 0.2); color: #4facfe;">Gửi Hỗ Trợ</div>
+                    <div class="nav-item-light" id="tab-view-support" style="font-size: 13px; cursor: pointer; padding: 8px 15px; border-radius: 20px;">Phản Hồi Từ Admin</div>
+                </div>
+            </div>
+
+            <div class="modal-content-scroll" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+                <div id="support-create-view">
+                    <form id="support-form" style="display: flex; flex-direction: column; gap: 15px;">
+                        <div>
+                            <label style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px; display: block;">Tiêu đề</label>
+                            <div class="chat-input-wrapper" style="width: 100%; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                                <input type="text" id="sp-title" required class="chat-input" placeholder="Tóm tắt vấn đề của bạn..." style="width: 100%; background: transparent; border: none; color: white; padding: 12px;">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px; display: block;">Email của bạn</label>
+                            <div class="chat-input-wrapper" style="width: 100%; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                                <input type="email" id="sp-email" required class="chat-input" placeholder="Để chúng tôi phản hồi lại..." style="width: 100%; background: transparent; border: none; color: white; padding: 12px;">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px; display: block;">Chi tiết</label>
+                            <div class="chat-input-wrapper" style="width: 100%; border-radius: 12px; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                                <textarea id="sp-details" required class="chat-input" style="width: 100%; min-height: 80px; resize: none; border: none; outline: none; background: transparent; color: white; font-family: 'Inter', sans-serif;" placeholder="Mô tả chi tiết vấn đề bạn đang gặp phải..."></textarea>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px; display: block;">Đính kèm hình ảnh (Tối đa 3 ảnh)</label>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <input type="file" id="sp-img-1" accept="image/*" class="glass-file-input">
+                                <input type="file" id="sp-img-2" accept="image/*" class="glass-file-input">
+                                <input type="file" id="sp-img-3" accept="image/*" class="glass-file-input">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-onboarding" style="margin-top: 10px; padding: 12px; font-size: 14px; background: linear-gradient(135deg, #4facfe, #00d4ff); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold;">
+                            <i class="fas fa-paper-plane"></i> Gửi Yêu Cầu
+                        </button>
+                    </form>
+                </div>
+
+                <div id="support-track-view" style="display: none;">
+                    <div id="sp-lookup-container" style="display: flex; flex-direction: column; gap: 15px;">
+                        <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin: 0;">Nhập email bạn đã dùng để kiểm tra phản hồi từ Admin.</p>
+                        <div class="chat-input-wrapper" style="width: 100%; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                            <input type="email" id="sp-lookup-email" class="chat-input" placeholder="Nhập email của bạn..." style="width: 100%; background: transparent; border: none; color: white; padding: 12px;">
+                        </div>
+                        <button id="btn-lookup-support" class="btn-onboarding" style="width: 100%; justify-content: center; padding: 12px; background: linear-gradient(135deg, #4facfe, #00d4ff); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold;">Kiểm Tra</button>
+                    </div>
+
+                    <div id="sp-ticket-list" style="display: none; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+
+                    <div id="sp-ticket-detail" style="display: none; flex-direction: column; gap: 15px; margin-top: 15px;">
+                        <button id="btn-back-to-tickets" style="background:none; border:none; color: #4facfe; cursor: pointer; text-align: left; padding: 0; font-size: 13px; font-weight: 600;">
+                            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                        </button>
+                        
+                        <div id="sp-chat-history" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;">
+</div>
+
+<div id="sp-reply-box" style="display: none; flex-direction: column; gap: 10px; margin-top: 5px;">
+    <textarea id="sp-reply-text" placeholder="Nhập phản hồi của bạn..." style="width: 100%; min-height: 60px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white; resize: vertical; font-family: inherit; outline: none;"></textarea>
+    <button id="btn-send-user-reply" style="padding: 12px; border-radius: 12px; border: none; background: linear-gradient(135deg, #4facfe, #00d4ff); color: white; font-weight: bold; cursor: pointer; transition: 0.3s;">
+        <i class="fas fa-paper-plane"></i> Gửi Phản Hồi
+    </button>
+</div>
+<div id="sp-ticket-closed-msg" style="text-align: center; color: #ff4757; font-size: 12px; padding: 10px; background: rgba(255,71,87,0.1); border-radius: 8px; display: none;">
+    <i class="fas fa-lock"></i> Thư hỗ trợ này đã được đóng hoặc từ chối.
+</div>
+                        
+                        <div id="sp-reply-box" style="display: none; flex-direction: column; gap: 10px; margin-top: 5px;">
+                            <textarea id="sp-reply-text" placeholder="Nhập phản hồi của bạn..." style="width: 100%; min-height: 60px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white; resize: vertical; font-family: inherit; outline: none;"></textarea>
+                            <button id="btn-send-user-reply" style="padding: 12px; border-radius: 12px; border: none; background: linear-gradient(135deg, #4facfe, #00d4ff); color: white; font-weight: bold; cursor: pointer; transition: 0.3s;">
+                                <i class="fas fa-paper-plane"></i> Gửi Phản Hồi
+                            </button>
+                        </div>
+                        <div id="sp-ticket-closed-msg" style="text-align: center; color: #ff4757; font-size: 12px; padding: 10px; background: rgba(255,71,87,0.1); border-radius: 8px; display: none;">
+                            <i class="fas fa-lock"></i> Thư hỗ trợ này đã được đóng hoặc từ chối.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 </html>

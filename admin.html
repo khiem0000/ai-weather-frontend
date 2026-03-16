@@ -131,24 +131,14 @@
                 </div>
             </div>
 
-<div id="analytics-content" class="content-section" style="display: none;">
-                <!-- 1. Analytics Header & Filter -->
+            <div id="analytics-content" class="content-section" style="display: none;">
                 <div class="analytics-header">
                     <div class="header-left">
                         <h2>Analytics Overview</h2>
-                        <p>Real-time insights into system performance and user behavior</p>
+                        <p>Real-time insights into system performance and user behavior (Auto-refresh: 5s)</p>
                     </div>
-                    <div class="header-right">
-                        <label for="time-filter" class="filter-label">Time Range:</label>
-                        <select id="time-filter" class="filter-select">
-                            <option value="today">Today</option>
-                            <option value="7days" selected>Last 7 Days</option>
-                            <option value="30days">Last 30 Days</option>
-                        </select>
                     </div>
-                </div>
 
-                <!-- 2. KPI Stats Row -->
                 <div class="kpi-stats">
                     <div class="kpi-card">
                         <div class="kpi-icon">
@@ -156,7 +146,7 @@
                         </div>
                         <div class="kpi-content">
                             <span class="kpi-label">Total Requests</span>
-                            <span class="kpi-value" data-kpi="total">1,284</span>
+                            <span class="kpi-value" data-kpi="total">--</span>
                         </div>
                     </div>
                     <div class="kpi-card">
@@ -165,7 +155,7 @@
                         </div>
                         <div class="kpi-content">
                             <span class="kpi-label">Success Rate</span>
-                            <span class="kpi-value" data-kpi="success">99.2%</span>
+                            <span class="kpi-value" data-kpi="success">--</span>
                         </div>
                     </div>
                     <div class="kpi-card">
@@ -174,7 +164,7 @@
                         </div>
                         <div class="kpi-content">
                             <span class="kpi-label">Avg. Latency</span>
-                            <span class="kpi-value" data-kpi="latency">0.45s</span>
+                            <span class="kpi-value" data-kpi="latency">--</span>
                         </div>
                     </div>
                     <div class="kpi-card">
@@ -183,81 +173,65 @@
                         </div>
                         <div class="kpi-content">
                             <span class="kpi-label">Active Sessions</span>
-                            <span class="kpi-value" data-kpi="sessions">12</span>
+                            <span class="kpi-value" data-kpi="sessions">--</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- 3. Main Charts Row -->
                 <div class="analytics-charts">
                     <div class="chart-card api-traffic-card">
                         <div class="card-header">
-                            <h3>API Call Traffic</h3>
+                            <h3>Lưu lượng truy cập (API Traffic)</h3>
                             <p>Usage trends across APIs over time</p>
                         </div>
                         <div class="chart-container">
                             <canvas id="apiTrafficChart"></canvas>
                         </div>
                     </div>
+                    
                     <div class="chart-card error-health-card">
                         <div class="card-header">
-                            <h3>System Health</h3>
-                            <p>Error distribution breakdown</p>
+                            <h3>System Health (Render Server)</h3>
+                            <p></p>
                         </div>
-                        <div class="chart-container">
-                            <canvas id="errorPieChart"></canvas>
+                        <div class="system-health-stats" style="padding: 32px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="font-weight: 600; font-size: 15px;">CPU Usage:</span>
+                                <span id="sh-cpu" style="color: var(--primary-blue); font-weight: 700; font-size: 16px;">--%</span>
+                            </div>
+                            <div class="progress-wrapper" style="margin-bottom: 24px; height: 16px;">
+                                <div id="sh-cpu-bar" class="progress-bar" style="width: 0%; background: var(--primary-blue); transition: width 0.5s ease;"></div>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--gray-200);">
+                                <span style="font-weight: 600; font-size: 15px;">Memory Used:</span>
+                                <span id="sh-mem" style="color: var(--warning); font-weight: 700; font-size: 16px;">-- GB</span>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                                <span style="font-weight: 600; font-size: 15px;"><i class="fas fa-clock" style="color: var(--success); margin-right: 8px;"></i>Server Uptime:</span>
+                                <span id="sh-uptime" style="color: var(--gray-700); font-weight: 600;">--</span>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-weight: 600; font-size: 15px;"><i class="fas fa-tachometer-alt" style="color: var(--danger); margin-right: 8px;"></i>Tốc độ phản hồi (Render):</span>
+                                <span id="sh-render-speed" style="color: var(--gray-700); font-weight: 600;">-- ms</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 4. Bottom Data Row -->
                 <div class="analytics-bottom">
-                    <!-- Top Locations -->
                     <div class="data-card top-locations-card">
                         <div class="card-header">
-                            <h3>Top Locations</h3>
-                            <p>Most queried cities (24h)</p>
+                            <h3>API Performance</h3>
+                            <p>Average response time (Fastest on top)</p>
                         </div>
-                        <div class="locations-list">
-                            <div class="location-item">
-                                <span class="location-name">Hà Nội</span>
-                                <div class="progress-wrapper">
-                                    <div class="progress-bar" style="width: 65%"></div>
-                                </div>
-                                <span class="location-count">65%</span>
-                            </div>
-                            <div class="location-item">
-                                <span class="location-name">TP. HCM</span>
-                                <div class="progress-wrapper">
-                                    <div class="progress-bar" style="width: 22%"></div>
-                                </div>
-                                <span class="location-count">22%</span>
-                            </div>
-                            <div class="location-item">
-                                <span class="location-name">Cần Thơ</span>
-                                <div class="progress-wrapper">
-                                    <div class="progress-bar" style="width: 8%"></div>
-                                </div>
-                                <span class="location-count">8%</span>
-                            </div>
-                            <div class="location-item">
-                                <span class="location-name">Đà Nẵng</span>
-                                <div class="progress-wrapper">
-                                    <div class="progress-bar" style="width: 4%"></div>
-                                </div>
-                                <span class="location-count">4%</span>
-                            </div>
-                            <div class="location-item">
-                                <span class="location-name">Hải Phòng</span>
-                                <div class="progress-wrapper">
-                                    <div class="progress-bar" style="width: 1%"></div>
-                                </div>
-                                <span class="location-count">1%</span>
-                            </div>
+                        <div class="locations-list" id="api-performance-list">
+                            <p style="text-align:center; color:#9ca3af; padding: 20px;">Đang tải dữ liệu...</p>
                         </div>
                     </div>
 
-                    <!-- Recent Error Logs -->
                     <div class="data-card error-logs-card">
                         <div class="card-header">
                             <h3>Recent Error Logs</h3>
@@ -274,37 +248,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td>14:32</td>
-                                        <td>Gemini</td>
-                                        <td><span class="badge error">429</span></td>
-                                        <td>Rate limit exceeded</td>
-                                    </tr>
-                                    <tr>
-                                        <td>13:45</td>
-                                        <td>OpenWeather</td>
-                                        <td><span class="badge error">401</span></td>
-                                        <td>Invalid API key</td>
-                                    </tr>
-                                    <tr>
-                                        <td>12:18</td>
-                                        <td>WeatherAPI</td>
-                                        <td><span class="badge warning">500</span></td>
-                                        <td>Server timeout</td>
-                                    </tr>
-                                    <tr>
-                                        <td>11:05</td>
-                                        <td>Gemini</td>
-                                        <td><span class="badge error">400</span></td>
-                                        <td>Invalid request</td>
-                                    </tr>
-                                    <tr>
-                                        <td>09:47</td>
-                                        <td>OpenWeather</td>
-                                        <td><span class="badge error">404</span></td>
-                                        <td>City not found</td>
-                                    </tr>
-                                </tbody>
+                                    </tbody>
                             </table>
                         </div>
                     </div>
@@ -367,14 +311,63 @@
                 </div>
             </div>
 
-            <div id="support-content" class="content-section" style="display: none;">
+<div id="support-content" class="content-section" style="display: none;">
                 <div class="support-welcome">
-                    <h2>Support</h2>
-                    <p>Get help and manage support tickets.</p>
+                    <h2>Support Tickets</h2>
+                    <p>Quản lý yêu cầu hỗ trợ và phản hồi người dùng.</p>
                 </div>
-                <div class="support-placeholder">
-                    <i class="fas fa-headset"></i>
-                    <p>Support system coming soon...</p>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Khách hàng</th>
+                                <th>Tiêu đề</th>
+                                <th>Trạng thái</th>
+                                <th>Thời gian</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="support-table-body">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 20px; color: #6b7280;">
+                                    <i class="fas fa-spinner fa-spin"></i> Đang tải danh sách...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="ticket-detail-modal" class="glass-modal-overlay" style="display: none; align-items: flex-start; padding-top: 5vh; overflow-y: auto; z-index: 10001;">
+                <div class="glass-modal-content" style="max-width: 600px; width: 90%; background: #fff; text-align: left; transform: none; margin: 0 auto 50px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200); padding-bottom: 16px; margin-bottom: 20px;">
+                        <h3 id="ticket-modal-title" style="margin: 0; font-size: 20px; color: var(--gray-900);">Chi tiết hỗ trợ</h3>
+                        <button onclick="closeTicketModal()" style="background: none; border: none; font-size: 20px; color: var(--gray-500); cursor: pointer; transition: 0.2s;"><i class="fas fa-times"></i></button>
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 12px; color: var(--gray-600);">
+                            <span><strong>Email:</strong> <span id="ticket-modal-email"></span></span>
+                            <span><strong>Ngày gửi:</strong> <span id="ticket-modal-date"></span></span>
+                        </div>
+                        <div style="background: var(--gray-50); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+                            <p id="ticket-modal-message" style="margin: 0; white-space: pre-wrap; font-size: 15px; line-height: 1.6; color: var(--gray-800);"></p>
+                        </div>
+                        
+                        <div id="ticket-modal-images" style="display: flex; gap: 12px; margin-top: 16px; overflow-x: auto; padding-bottom: 8px;">
+                            </div>
+                    </div>
+
+                    <div style="border-top: 1px solid var(--gray-200); padding-top: 20px;">
+                        <h4 style="margin-bottom: 12px; font-size: 15px; color: var(--gray-800);"><i class="fas fa-reply" style="color: var(--primary-blue); margin-right: 8px;"></i>Phản hồi khách hàng</h4>
+                        <textarea id="ticket-reply-text" rows="4" placeholder="Nhập câu trả lời của bạn tại đây..." style="width: 100%; padding: 12px 16px; border: 1px solid var(--gray-300); border-radius: var(--radius-md); font-family: inherit; font-size: 14px; resize: vertical; margin-bottom: 16px; outline: none; transition: border-color 0.2s;"></textarea>
+                        
+                        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                            <button class="btn-glass cancel" onclick="closeTicketModal()" style="padding: 10px 20px;">Đóng</button>
+                            <button class="btn-glass confirm" id="btn-submit-reply" onclick="submitTicketReply()" style="padding: 10px 20px;">Gửi phản hồi</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -474,5 +467,13 @@
     </div>
 
     <script src="./js/admin.js"></script>
+    <div id="loading-overlay" class="loading-overlay">
+    <div class="glass-modal-content" style="width: auto; padding: 20px 40px; background: rgba(15,15,35,0.9);">
+        <div class="loading" style="font-size: 18px;">
+            <i class="fas fa-spinner" style="color: #4facfe;"></i> 
+            <span id="loading-text" style="color: white; margin-left: 10px;">Đang xử lý...</span>
+        </div>
+    </div>
+</div>
 </body>
 </html>

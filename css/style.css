@@ -129,6 +129,16 @@ body { height: 100vh; width: 100vw; overflow: hidden; color: var(--text-main); b
 /* Bell Notification Badge */
 .notification-badge { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ff4757; border-radius: 50%; box-shadow: 0 0 8px #ff4757; border: 1.5px solid #fff; }
 
+.icon-square-light i {
+    font-weight: 900 !important;
+    font-size: 16px !important;
+}
+
+#btn-support-header i {
+    font-weight: 900 !important;
+    text-shadow: none;
+}
+
 .planner-main-grid-light { display: grid; grid-template-columns: 1.8fr 1fr; gap: 24px; flex-grow: 1; min-height: 0; }
 .calendar-container-light { display: flex; flex-direction: column; }
 .calendar-header-light { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 10px; }
@@ -1764,6 +1774,74 @@ body.light-theme .suggestion-chip:hover {
     transform: translateY(0);
 }
 
+/* ========================================
+   SETTINGS HEADER ICONS CLUSTER (RIGHT-ALIGNED)
+   ======================================== */
+#settings-view header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 0 10px !important;
+}
+
+#settings-view header > div {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important; /* Tight spacing between 3 icons */
+    flex-shrink: 0 !important;
+}
+
+/* Icon button refinements */
+#settings-headphone-btn,
+#settings-bell-btn,
+#user-menu-container {
+    flex-shrink: 0 !important;
+}
+
+#settings-headphone-btn,
+#settings-bell-btn {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+
+#settings-headphone-btn:hover,
+#settings-bell-btn:hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(0, 136, 255, 0.4) !important;
+}
+
+/* Light theme support */
+body.light-theme #settings-headphone-btn,
+body.light-theme #settings-bell-btn {
+    background: rgba(0, 0, 0, 0.08) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+body.light-theme #settings-headphone-btn:hover,
+body.light-theme #settings-bell-btn:hover {
+    background: rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Mobile: Stack if too tight */
+@media (max-width: 480px) {
+    #settings-view header > div {
+        gap: 8px !important;
+    }
+    
+    #settings-headphone-btn,
+    #settings-bell-btn {
+        width: 36px !important;
+        height: 36px !important;
+    }
+}
+
 /* Light theme support for delete modal */
 body.light-theme .chat-delete-modal-content {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.5) 100%);
@@ -1792,6 +1870,87 @@ body.light-theme .btn-chat-delete-cancel:hover {
     border-color: rgba(0, 0, 0, 0.2);
     color: #1e293b;
 }
+
+/* =========================================
+   SUPPORT MODAL CSS
+   ========================================= */
+.glass-file-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    width: 100%;
+}
+.support-ticket-item {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.support-ticket-item:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: #4facfe;
+    transform: translateY(-2px);
+}
+.sp-msg-bubble {
+    padding: 12px 16px;
+    border-radius: 14px;
+    font-size: 13px;
+    max-width: 90%;
+    line-height: 1.5;
+}
+.sp-msg-user {
+    background: rgba(79, 172, 254, 0.2);
+    border: 1px solid rgba(79, 172, 254, 0.4);
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+    color: #fff;
+}
+.sp-msg-admin {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    color: #fff;
+}
+.sp-status-badge {
+    font-size: 10px; font-weight: 600; padding: 4px 8px; border-radius: 50px;
+}
+.status-pending { background: rgba(246, 211, 101, 0.2); color: #f6d365; }
+.status-in_progress { background: rgba(79, 172, 254, 0.2); color: #4facfe; }
+.status-resolved { background: rgba(16, 185, 129, 0.2); color: #4ade80; }
+.status-rejected { background: rgba(239, 68, 68, 0.2); color: #ff4757; }
+
+/* Hỗ trợ Light Theme cho Support Modal */
+body.light-theme .support-box {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #2F3542 !important;
+    border-color: rgba(0,0,0,0.1) !important;
+}
+body.light-theme .support-box input,
+body.light-theme .support-box textarea {
+    color: #2F3542 !important;
+}
+body.light-theme .support-box .chat-input-wrapper {
+    background: rgba(0,0,0,0.05) !important;
+    border-color: rgba(0,0,0,0.1) !important;
+}
+body.light-theme .support-box label,
+body.light-theme .support-box p {
+    color: #636e72 !important;
+}
+body.light-theme .support-ticket-item { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+body.light-theme .sp-msg-admin { background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.1); color: #2F3542; }
+body.light-theme .sp-msg-user { background: #4facfe; color: #fff; }
+body.light-theme #btn-close-support { color: #2F3542 !important; }
 
 /* ========================================
    RESPONSIVE MOBILE (BẢN FINAL V4 - TỈA PIXEL STATS)
