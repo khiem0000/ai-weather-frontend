@@ -4,6 +4,8 @@
 const API_KEY = 'd96db3ca494c4a359b8135749260103'; 
 const OWM_API_KEY = '9f4ba5569ae9a82d8dbdf44e30e374b9';
 
+
+
 // ============================================================
 // WEB PUSH NOTIFICATIONS CONFIGURATION
 // ============================================================
@@ -566,7 +568,7 @@ function removeVietnameseTones(str) {
     str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
     str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
     str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    str = str.replace(/[^\x00-\x7F]/g, ""); 
+    //str = str.replace(/[^\x00-\x7F]/g, ""); 
     return str;
 }
 
@@ -681,57 +683,75 @@ menuItems.forEach((item, index) => {
 // =========================================================================
 // 4. WEATHER API FETCHING
 // =========================================================================
+
+// Đặt 3 biến này ở bên ngoài, ngay phía trên hàm
+let isFetchingWeather = false; 
+let lastWeatherQuery = ""; 
+let lastFetchTime = 0; // Biến lưu thời gian gọi cuối cùng
+
 async function fetchWeatherData(query) {
+    if (!query) return;
+
+    // THÊM DÒNG NÀY ĐỂ CHẶN CÁC LUỒNG ĐỒNG THỜI
+    if (isFetchingWeather) {
+        console.log('🛑 Đang lấy dữ liệu, vui lòng đợi...');
+        return;
+    }
+
+    const now = Date.now();
+
+    // CHỈ CHẶN NẾU: Tên query Y CHANG nhau VÀ gọi lại trong vòng 5 giây
+    // (Điều này sẽ triệt tiêu hoàn toàn 3 luồng tranh nhau gọi cùng 1 tên thành phố lúc F5)
+    if (query === lastWeatherQuery && (now - lastFetchTime < 5000)) {
+        console.log('🛑 Đã tải địa điểm này, chặn gọi spam:', query);
+        return;
+    }
+
+    // Nếu Query KHÁC (VD: GPS vừa ra tọa độ mới, khác với thành phố mặc định) 
+    // -> CHO PHÉP ĐI QUA và cập nhật lại bộ nhớ
+    isFetchingWeather = true;
+    lastFetchTime = now;
+    lastWeatherQuery = query;
+    
     console.log('fetchWeatherData called with query:', query);
-    const startTime = Date.now(); // 1. BẮT ĐẦU BẤM GIỜ
+    const startTime = Date.now();
     
     try {
         const safeQuery = encodeURIComponent(removeVietnameseTones(query));
         const langParam = window.appSettings.language; 
         const response = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${safeQuery}&days=7&aqi=yes&lang=${langParam}`);
         
-        const responseTime = Date.now() - startTime; // Dừng bấm giờ
+        const responseTime = Date.now() - startTime;
 
         if (!response.ok) {
-            // Báo cáo lỗi (Dùng query cũ vì chưa có data)
             if (typeof reportApiLog === 'function') {
                 reportApiLog('WeatherAPI', response.status, responseTime, query, "Lỗi từ API");
             }
             return;
         }
 
-// 1. ĐỌC DỮ LIỆU JSON TRƯỚC
-        // 1. ĐỌC DỮ LIỆU JSON TRƯỚC
+        // 1. ĐỌC DỮ LIỆU JSON
         const data = await response.json();
         window.currentWeatherData = data; 
         
-        // ==========================================
-        // 2. LẤY TÊN TỈNH/THÀNH PHỐ ĐỘNG (Dành cho mọi nơi)
-        // ==========================================
+        // 2. LẤY TÊN TỈNH/THÀNH PHỐ ĐỘNG
         let dynamicProvince = data.location.name;
-        // Nếu API có trường region (Tỉnh lớn), luôn ưu tiên lấy region
         if (data.location.region && data.location.region !== "") {
-            dynamicProvince = data.location.region; // Sẽ tự động là "Dong Thap", "Ba Ria - Vung Tau", "Can Tho"...
+            dynamicProvince = data.location.region; 
         }
         
         window.lastSearchedQuery = dynamicProvince; 
 
-        // ==========================================
-        // 3. TỰ CHỮA LÀNH DỮ LIỆU CŨ BỊ LỖI ẤP/XÃ/TỌA ĐỘ
-        // ==========================================
+        // 3. TỰ CHỮA LÀNH DỮ LIỆU
         let currentSavedCity = window.appSettings.city || "";
         let cleanSavedCity = removeVietnameseTones(currentSavedCity).toLowerCase().trim();
-        
-        // Nhận diện dữ liệu rác trong máy người dùng: Bắt đầu bằng "ap ", "xa " hoặc là tọa độ
         let isBadData = cleanSavedCity.startsWith("ap ") || cleanSavedCity.startsWith("xa ") || /^[0-9.-]+,[0-9.-]+$/.test(cleanSavedCity);
 
-        // Nếu người dùng bấm GPS (isUpdatingHomeCity) HOẶC máy đang bị nhiễm dữ liệu rác
         if (window.isUpdatingHomeCity || isBadData) {
-            window.appSettings.city = dynamicProvince; // Ghi đè Tỉnh/Thành phố chuẩn vào cài đặt
+            window.appSettings.city = dynamicProvince;
             window.isUpdatingHomeCity = false; 
             if (typeof saveCurrentUserSettings === 'function') {
-                console.log("🛠️ Tự động cập nhật Tỉnh/Thành phố chuẩn lên SQL:", dynamicProvince);
-                saveCurrentUserSettings(); // Cập nhật thẳng lên DB
+                saveCurrentUserSettings(); 
             }
         }
 
@@ -739,8 +759,6 @@ async function fetchWeatherData(query) {
         if (typeof reportApiLog === 'function') {
             reportApiLog('WeatherAPI', 200, responseTime, dynamicProvince);
         }
-        
-        updateLastUpdatedTime();
         
         updateLastUpdatedTime();
         const isF = window.appSettings.tempUnit === 'F';
@@ -824,10 +842,11 @@ async function fetchWeatherData(query) {
 
     } catch (err) { 
         console.error("Fetch Error:", err); 
-        // BÁO CÁO LỖI MẠNG
         if (typeof reportApiLog === 'function') {
             reportApiLog('WeatherAPI', 500, Date.now() - startTime, query, err.message);
         }
+    } finally {
+        isFetchingWeather = false;
     }
 }
 
@@ -2174,7 +2193,9 @@ function applyUserSettings(settings) {
     if (settings.city && typeof fetchWeatherData === 'function') {
         console.log('Applying city from settings:', settings.city);
         window.lastSearchedQuery = settings.city;
-        fetchWeatherData(settings.city);
+        
+        // ❌ XÓA HOẶC COMMENT DÒNG NÀY LẠI
+        // fetchWeatherData(settings.city); 
     }
 }
 
@@ -2389,7 +2410,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         console.log('⏳ Lazy init: account + weather');
         initAccountSystem();
-        getPreciseLocationWithFallback();
     }, 500);
 });
 
@@ -2415,27 +2435,7 @@ function hideLoadingScreen() {
 }
 
 // GPS with shorter timeout + fallback (non-blocking)
-function getPreciseLocationWithFallback() {
-    const account = getCurrentAccount();
-    const fallbackCity = account?.settings?.city || 'Can Tho';
-    
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            pos => fetchWeatherData(`${pos.coords.latitude},${pos.coords.longitude}`),
-            () => fetchWeatherData(fallbackCity),
-            { timeout: 2000, enableHighAccuracy: false } // 2s + low accuracy = fast
-        );
-    } else {
-        fetchWeatherData(fallbackCity);
-    }
-}
 
-// Also init if DOM already ready
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    showLoadingScreen();
-    initTabs();
-    setTimeout(initAccountSystem, 500);
-}
 
 function reRenderWeatherUI() {
     const data = window.currentWeatherData; if(!data) return;
@@ -2505,24 +2505,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Moved to initAccountSystem to ensure it runs AFTER account/tasks are loaded 
 
-function getPreciseLocation() {
-    const currentAccount = getCurrentAccount();
-    if (currentAccount?.settings?.city) return;
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            pos => {
-                window.isUpdatingHomeCity = true; // CỜ BÁO HIỆU: Đang dùng GPS
-                fetchWeatherData(`${pos.coords.latitude},${pos.coords.longitude}`);
-            },
-            err => console.log("User denied GPS."), { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
-    }
-}
 
-// Call getPreciseLocation after initial setup
-setTimeout(() => {
-    getPreciseLocation();
-}, 500);
+
 
 setInterval(() => {
     if (window.lastSearchedQuery) fetchWeatherData(window.lastSearchedQuery);
@@ -2784,56 +2768,23 @@ async function reportApiLog(apiName, statusCode, responseTime, searchedLocation,
     }
 }
 // ==========================================
-// HỆ THỐNG SUPPORT TICKETS (USER SIDE)
+// HỆ THỐNG SUPPORT TICKETS (BẢN CHUẨN + MÃ PIN)
 // ==========================================
 
-// 1. Hàm hiển thị Toast thông báo siêu đẹp (Tự động tạo giao diện)
 function showSupportToast(message, type = 'success') {
-    let container = document.getElementById('support-toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'support-toast-container';
-        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
-        document.body.appendChild(container);
-    }
-
+    let container = document.getElementById('support-toast-container') || document.createElement('div');
+    if (!container.id) { container.id = 'support-toast-container'; container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;'; document.body.appendChild(container); }
     const toast = document.createElement('div');
-    toast.style.cssText = `
-        background: ${type === 'success' ? 'rgba(16, 185, 129, 0.95)' : 'rgba(239, 68, 68, 0.95)'};
-        color: white; padding: 12px 24px; border-radius: 12px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.3); backdrop-filter: blur(10px);
-        display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500;
-        transform: translateX(120%); transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        pointer-events: auto;
-    `;
-    const icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
-    toast.innerHTML = `<i class="fas ${icon}" style="font-size: 18px;"></i> <span>${message}</span>`;
-    
+    toast.style.cssText = `background: ${type === 'success' ? 'rgba(16, 185, 129, 0.95)' : 'rgba(239, 68, 68, 0.95)'}; color: white; padding: 12px 24px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); backdrop-filter: blur(10px); display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; transform: translateX(120%); transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); pointer-events: auto;`;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-times-circle'}" style="font-size: 18px;"></i> <span>${message}</span>`;
     container.appendChild(toast);
-    
-    // Hiển thị mượt mà
-    requestAnimationFrame(() => {
-        setTimeout(() => { toast.style.transform = 'translateX(0)'; }, 10);
-    });
-    
-    // Tự động biến mất sau 3.5 giây
-    setTimeout(() => {
-        toast.style.transform = 'translateX(120%)';
-        setTimeout(() => toast.remove(), 400);
-    }, 3500);
+    requestAnimationFrame(() => { setTimeout(() => { toast.style.transform = 'translateX(0)'; }, 10); });
+    setTimeout(() => { toast.style.transform = 'translateX(120%)'; setTimeout(() => toast.remove(), 400); }, 3500);
 }
 
-// 2. Logic xử lý Modal và Form Hỗ trợ
 document.addEventListener("DOMContentLoaded", () => {
     const API_BASE_URL = 'https://ai-weather-backend-f8q6.onrender.com/api/admin';
-
-    // Hàm chuyển đổi File sang Base64
-    const toBase64 = file => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
+    const toBase64 = file => new Promise((res, rej) => { const r = new FileReader(); r.readAsDataURL(file); r.onload = () => res(r.result); r.onerror = e => rej(e); });
 
     const supportModal = document.getElementById("support-modal-overlay");
     const btnOpenSupport = document.getElementById("settings-headphone-btn");
@@ -2843,431 +2794,104 @@ document.addEventListener("DOMContentLoaded", () => {
     const tabView = document.getElementById("tab-view-support");
     const viewCreate = document.getElementById("support-create-view");
     const viewTrack = document.getElementById("support-track-view");
-
-    // --- ĐÓNG / MỞ MODAL ---
-    if(btnOpenSupport) {
-        btnOpenSupport.addEventListener("click", () => {
-            supportModal.classList.add("show");
-            supportModal.style.display = "flex";
-            setTimeout(() => supportModal.style.opacity = "1", 10);
-        });
-    }
     
-    function closeSupportModal() {
-        if(supportModal) {
-            supportModal.style.opacity = "0";
-            setTimeout(() => {
-                supportModal.classList.remove("show");
-                supportModal.style.display = "none";
-            }, 300);
-        }
-    }
-
-    if(btnCloseSupport) btnCloseSupport.addEventListener("click", closeSupportModal);
-    if(supportModal) {
-        supportModal.addEventListener('click', (e) => {
-            if (e.target === supportModal) closeSupportModal();
-        });
-    }
-
-    // --- CHUYỂN TAB ---
-    if(tabSend && tabView) {
-        tabSend.addEventListener("click", () => {
-            tabSend.style.background = "rgba(79, 172, 254, 0.2)";
-            tabSend.style.color = "#4facfe";
-            tabView.style.background = "transparent";
-            tabView.style.color = "inherit";
-            viewCreate.style.display = "block";
-            viewTrack.style.display = "none";
-        });
-        
-        tabView.addEventListener("click", () => {
-            tabView.style.background = "rgba(79, 172, 254, 0.2)";
-            tabView.style.color = "#4facfe";
-            tabSend.style.background = "transparent";
-            tabSend.style.color = "inherit";
-            viewCreate.style.display = "none";
-            viewTrack.style.display = "block";
-        });
-    }
-
-    // --- TAB 1: GỬI HỖ TRỢ (GỬI BẰNG JSON & BASE64) ---
-    const supportForm = document.getElementById("support-form");
-    if(supportForm) {
-        supportForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const submitBtn = supportForm.querySelector('button[type="submit"]');
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi...';
-            submitBtn.disabled = true;
-
-            try {
-                const title = document.getElementById("sp-title").value;
-                const email = document.getElementById("sp-email").value;
-                const message = document.getElementById("sp-details").value;
-                
-                let image1 = null, image2 = null, image3 = null;
-                const file1 = document.getElementById('sp-img-1')?.files[0];
-                const file2 = document.getElementById('sp-img-2')?.files[0];
-                const file3 = document.getElementById('sp-img-3')?.files[0];
-
-                if(file1) image1 = await toBase64(file1);
-                if(file2) image2 = await toBase64(file2);
-                if(file3) image3 = await toBase64(file3);
-
-                const payload = { title, email, message, image1, image2, image3 };
-
-                const response = await fetch(`${API_BASE_URL}/support`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const result = await response.json();
-                
-                if(response.ok || result.success) {
-                    showSupportToast("Đã gửi yêu cầu hỗ trợ thành công! Bạn có thể sang tab 'Phản Hồi' để theo dõi.", "success");
-                    supportForm.reset();
-                } else {
-                    showSupportToast(result.message || "Không thể gửi yêu cầu.", "error");
-                }
-            } catch (error) {
-                console.error("Lỗi gửi support:", error);
-                showSupportToast("Lỗi kết nối máy chủ. Vui lòng thử lại sau.", "error");
-            } finally {
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi Yêu Cầu';
-                submitBtn.disabled = false;
-            }
-        });
-    }
-
-    // --- TAB 2: TRA CỨU TICKETS ---
-    let currentTicketUserViewId = null; // Track current ticket for user replies
-
-    const btnLookup = document.getElementById("btn-lookup-support");
-
     const lookupContainer = document.getElementById("sp-lookup-container");
     const ticketList = document.getElementById("sp-ticket-list");
     const ticketDetail = document.getElementById("sp-ticket-detail");
-    const btnBackToList = document.getElementById("btn-back-to-tickets");
-
-    if(btnLookup) {
-        btnLookup.addEventListener("click", async () => {
-            const email = document.getElementById("sp-lookup-email").value;
-            if(!email) {
-                showSupportToast("Vui lòng nhập email để tra cứu!", "error");
-                return;
-            }
-
-            btnLookup.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tìm...';
-            try {
-                const response = await fetch(`${API_BASE_URL}/support/user?email=${encodeURIComponent(email)}`);
-                const data = await response.json(); 
-
-                if((response.ok || data.success) && data.tickets && data.tickets.length > 0) {
-                    lookupContainer.style.display = "none";
-                    ticketList.style.display = "flex";
-                    renderTicketList(data.tickets);
-                    showSupportToast(`Tìm thấy ${data.tickets.length} phiếu hỗ trợ của bạn.`, "success");
-                } else {
-                    showSupportToast("Không tìm thấy phiếu hỗ trợ nào với email này.", "error");
-                }
-            } catch (error) {
-                showSupportToast("Lỗi kết nối máy chủ khi tra cứu.", "error");
-            } finally {
-                btnLookup.innerHTML = 'Kiểm Tra';
-            }
-        });
-    }
-
-    if(btnBackToList) {
-        btnBackToList.addEventListener("click", () => {
-            ticketDetail.style.display = "none";
-            ticketList.style.display = "flex";
-        });
-    }
-
-    function renderTicketList(tickets) {
-        ticketList.innerHTML = "";
-        tickets.forEach(t => {
-            const statusMap = {
-                'pending': { class: 'status-pending', text: 'Đang Chờ' },
-                'in_progress': { class: 'status-in_progress', text: 'Đang Xử Lý' },
-                'resolved': { class: 'status-resolved', text: 'Đã Xử Lý' },
-                'rejected': { class: 'status-rejected', text: 'Từ Chối' }
-            };
-            const st = statusMap[t.status] || statusMap['pending'];
-            
-            const item = document.createElement("div");
-            item.className = "support-ticket-item";
-            item.innerHTML = `
-                <div>
-                    <h4 style="margin:0 0 5px 0; font-size:14px; color: var(--text-main);">${t.title}</h4>
-                    <span style="font-size:11px; opacity:0.6; color: var(--text-main);">Ngày gửi: ${new Date(t.created_at).toLocaleDateString('vi-VN')}</span>
-                </div>
-                <span class="sp-status-badge ${st.class}">${st.text}</span>
-            `;
-            item.addEventListener("click", () => showTicketDetail(t));
-            ticketList.appendChild(item);
-        });
-    }
-
-    function showTicketDetail(ticket) {
-        ticketList.style.display = "none";
-        ticketDetail.style.display = "flex";
-        
-        const closedMsg = document.getElementById("sp-ticket-closed-msg");
-        if(ticket.status === 'resolved' || ticket.status === 'rejected') {
-            closedMsg.style.display = "block";
-        } else {
-            closedMsg.style.display = "none";
-        }
-
-        const chatBox = document.getElementById("sp-chat-history");
-        chatBox.innerHTML = `
-            <div class="sp-msg-bubble sp-msg-user">
-                <strong style="font-size: 11px; opacity: 0.8; margin-bottom: 5px; display: block;">Vấn đề của bạn:</strong>
-                ${ticket.message}
-            </div>
-        `;
-
-        if(ticket.admin_reply) {
-            chatBox.innerHTML += `
-                <div class="sp-msg-bubble sp-msg-admin">
-                    <strong style="font-size: 11px; opacity: 0.8; margin-bottom: 5px; display: block; color: #4facfe;">Phản hồi từ Admin:</strong>
-                    ${ticket.admin_reply}
-                </div>
-            `;
-        } else {
-             chatBox.innerHTML += `
-                <div style="text-align:center; font-size: 12px; color: rgba(255,255,255,0.5); padding: 10px; font-style: italic;">
-                    Admin đang kiểm tra và sẽ sớm phản hồi cho bạn...
-                </div>
-            `;
-        }
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-});
-// ==========================================
-// CÁCH SỬ DỤNG TRONG HÀM GỌI THỜI TIẾT CỦA BẠN:
-// ==========================================
-// const startTime = Date.now();
-// const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?...`);
-// const responseTime = Date.now() - startTime;
-//
-// if (response.ok) {
-//     reportApiLog(200, responseTime, city_name);
-// } else {
-//     reportApiLog(response.status, responseTime, city_name, "Lỗi fetch thời tiết");
-// }
-
-// SUPPORT MODAL EVENT HANDLERS (Phase 5)
-// Tab buttons
-document.addEventListener('DOMContentLoaded', function() {
-    // Tab switching buttons
-    const btnSend = document.getElementById('tab-btn-send');
-    const btnHistory = document.getElementById('tab-btn-history');
-    
-    if (btnSend) {
-        btnSend.addEventListener('click', () => {
-            if (typeof window.switchSupportTab === 'function') {
-                window.switchSupportTab('send');
-            }
-        });
-    }
-    
-    if (btnHistory) {
-        btnHistory.addEventListener('click', () => {
-            if (typeof window.switchSupportTab === 'function') {
-                window.switchSupportTab('history');
-            }
-        });
-    }
-    
-    // Support form submit
-    const supportForm = document.getElementById('support-form');
-    if (supportForm) {
-        supportForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (typeof window.submitUserTicket === 'function') {
-                window.submitUserTicket();
-            }
-        });
-    }
-});
-
-// ==========================================
-// HỆ THỐNG SUPPORT TICKETS (USER SIDE)
-// ==========================================
-document.addEventListener("DOMContentLoaded", () => {
-    const USER_SUPPORT_API = 'https://ai-weather-backend-f8q6.onrender.com/api/user/support';
-
-    const supportModal = document.getElementById("support-modal-overlay");
-    const btnOpenSupport = document.getElementById("settings-headphone-btn"); // Nút tai nghe trong Settings
-    const btnCloseSupport = document.getElementById("btn-close-support");
-    
-    const tabSend = document.getElementById("tab-send-support");
-    const tabView = document.getElementById("tab-view-support");
-    const viewCreate = document.getElementById("support-create-view");
-    const viewTrack = document.getElementById("support-track-view");
-
-    // --- ĐÓNG / MỞ MODAL ---
-    if(btnOpenSupport) {
-        btnOpenSupport.addEventListener("click", () => {
-            supportModal.classList.add("show");
-            supportModal.style.display = "flex"; // Fix lỗi không hiện overlay
-            setTimeout(() => supportModal.style.opacity = "1", 10);
-        });
-    }
-    
-    function closeSupportModal() {
-        if(supportModal) {
-            supportModal.style.opacity = "0";
-            setTimeout(() => {
-                supportModal.classList.remove("show");
-                supportModal.style.display = "none";
-            }, 300);
-        }
-    }
-
-    if(btnCloseSupport) btnCloseSupport.addEventListener("click", closeSupportModal);
-    if(supportModal) {
-        supportModal.addEventListener('click', (e) => {
-            if (e.target === supportModal) closeSupportModal();
-        });
-    }
 
     // --- CHUYỂN TAB ---
     if(tabSend && tabView) {
-        tabSend.addEventListener("click", () => {
-            tabSend.style.background = "rgba(79, 172, 254, 0.2)";
-            tabSend.style.color = "#4facfe";
-            tabView.style.background = "transparent";
-            tabView.style.color = "inherit";
-            viewCreate.style.display = "block";
-            viewTrack.style.display = "none";
-        });
-        
-        tabView.addEventListener("click", () => {
-            tabView.style.background = "rgba(79, 172, 254, 0.2)";
-            tabView.style.color = "#4facfe";
-            tabSend.style.background = "transparent";
-            tabSend.style.color = "inherit";
-            viewCreate.style.display = "none";
-            viewTrack.style.display = "block";
-        });
+        const switchTab = (to) => {
+            const isSend = to === 'send';
+            tabSend.classList.toggle("active", isSend); 
+            tabView.classList.toggle("active", !isSend);
+            tabSend.style.background = isSend ? "rgba(79, 172, 254, 0.2)" : "transparent";
+            tabSend.style.color = isSend ? "#4facfe" : "inherit";
+            tabView.style.background = !isSend ? "rgba(79, 172, 254, 0.2)" : "transparent";
+            tabView.style.color = !isSend ? "#4facfe" : "inherit";
+            viewCreate.style.display = isSend ? "block" : "none"; 
+            viewTrack.style.display = isSend ? "none" : "block";
+        };
+        tabSend.onclick = () => switchTab('send'); 
+        tabView.onclick = () => switchTab('history');
     }
+    
+    if(btnCloseSupport) btnCloseSupport.onclick = () => { 
+        supportModal.style.opacity = "0"; 
+        setTimeout(() => { supportModal.classList.remove("show"); supportModal.style.display = "none"; }, 300); 
+    };
+    if(btnOpenSupport) btnOpenSupport.onclick = () => { 
+        supportModal.classList.add("show"); 
+        supportModal.style.display = "flex"; 
+        setTimeout(() => supportModal.style.opacity = "1", 10); 
+    };
 
-    // Đổi lại URL đúng với file adminRoutes.js của bạn
-    const API_BASE_URL = 'https://ai-weather-backend-f8q6.onrender.com/api/admin';
-
-    // Hàm chuyển đổi File sang Base64
-    const toBase64 = file => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-
-    // --- TAB 1: GỬI HỖ TRỢ (GỬI BẰNG JSON & BASE64) ---
+    // --- GỬI HỖ TRỢ ---
     const supportForm = document.getElementById("support-form");
     if(supportForm) {
-        supportForm.addEventListener("submit", async (e) => {
+        supportForm.onsubmit = async (e) => {
             e.preventDefault();
-            const submitBtn = supportForm.querySelector('button[type="submit"]');
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi...';
-            submitBtn.disabled = true;
-
+            const pinInput = document.getElementById("sp-pin");
+            const pin = pinInput ? pinInput.value.trim() : "";
+            if (pin.length !== 4) return showSupportToast("Vui lòng nhập đúng 4 số mã PIN!", "error");
+            
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi...'; btn.disabled = true;
             try {
-                const title = document.getElementById("sp-title").value;
-                const email = document.getElementById("sp-email").value;
-                const message = document.getElementById("sp-details").value;
-                
-                // Đọc và chuyển ảnh sang Base64
-                let image1 = null, image2 = null, image3 = null;
-                const file1 = document.getElementById('sp-img-1').files[0];
-                const file2 = document.getElementById('sp-img-2').files[0];
-                const file3 = document.getElementById('sp-img-3').files[0];
-
-                if(file1) image1 = await toBase64(file1);
-                if(file2) image2 = await toBase64(file2);
-                if(file3) image3 = await toBase64(file3);
-
-                // Gói data thành JSON chuẩn
-                const payload = {
-                    title: title,
-                    email: email,
-                    message: message,
-                    image1: image1,
-                    image2: image2,
-                    image3: image3
+                const f1 = document.getElementById('sp-img-1')?.files[0], f2 = document.getElementById('sp-img-2')?.files[0], f3 = document.getElementById('sp-img-3')?.files[0];
+                const payload = { 
+                    title: document.getElementById("sp-title").value, 
+                    email: document.getElementById("sp-email").value, 
+                    message: document.getElementById("sp-details").value,
+                    pin_code: pin,
+                    image1: f1 ? await toBase64(f1) : null, image2: f2 ? await toBase64(f2) : null, image3: f3 ? await toBase64(f3) : null
                 };
-
-                const response = await fetch(`${API_BASE_URL}/support`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const result = await response.json();
-                
-                if(response.ok || result.success) {
-                    showToast("✅ Đã gửi yêu cầu hỗ trợ thành công! Vui lòng sang tab 'Phản Hồi' để theo dõi.", "success");                
-                    supportForm.reset();
-                } else {
-                    showToast("❌ Lỗi: " + (result.message || "Không thể gửi yêu cầu."), "error");
-                }
-            } catch (error) {
-                console.error("Lỗi gửi support:", error);
-                showToast("❌ Lỗi kết nối máy chủ. Vui lòng thử lại.", "error");          } 
-                finally {
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi Yêu Cầu';
-                submitBtn.disabled = false;
-            }
-        });
+                const res = await fetch(`${API_BASE_URL}/support`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) { showSupportToast("Đã gửi yêu cầu thành công!", "success"); e.target.reset(); }
+            } catch (err) { showSupportToast("Lỗi kết nối máy chủ!", "error"); }
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi Yêu Cầu'; btn.disabled = false;
+        };
     }
 
-    // --- TAB 2: TRA CỨU TICKETS (SỬ DỤNG /support/user) ---
+    // --- TRA CỨU & NHẬP LẠI EMAIL ---
+    const btnResetSearch = document.getElementById("btn-reset-search");
     const btnLookup = document.getElementById("btn-lookup-support");
-    const lookupContainer = document.getElementById("sp-lookup-container");
-    const ticketList = document.getElementById("sp-ticket-list");
-    const ticketDetail = document.getElementById("sp-ticket-detail");
-    const btnBackToList = document.getElementById("btn-back-to-tickets");
-
+    
+    if(btnResetSearch) btnResetSearch.onclick = () => { 
+        lookupContainer.style.display = "flex"; 
+        ticketList.style.display = "none"; 
+        ticketDetail.style.display = "none"; 
+    };
+    
     if(btnLookup) {
-        btnLookup.addEventListener("click", async () => {
+        btnLookup.onclick = async () => {
             const email = document.getElementById("sp-lookup-email").value;
-            if(!email) return showToast("Vui lòng nhập email để tra cứu!", "error");
-
+            if(!email) return showSupportToast("Vui lòng nhập email!", "error");
             btnLookup.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tìm...';
             try {
-                // Gọi đúng router.get('/support/user') trong adminRoutes.js
-                const response = await fetch(`${API_BASE_URL}/support/user?email=${encodeURIComponent(email)}`);
-                const data = await response.json(); 
-
-                if((response.ok || data.success) && data.tickets && data.tickets.length > 0) {
-                    lookupContainer.style.display = "none";
+                const res = await fetch(`${API_BASE_URL}/support/user?email=${encodeURIComponent(email)}`);
+                const data = await res.json();
+                if ((res.ok || data.success) && data.tickets && data.tickets.length > 0) {
+                    lookupContainer.style.display = "none"; 
                     ticketList.style.display = "flex";
                     renderTicketList(data.tickets);
-                } else {
-                    showToast("Không tìm thấy phiếu hỗ trợ nào với email này.", "warning");
-                }
-            } catch (error) {
-                showToast("❌ Lỗi kết nối máy chủ.", "error");
-            } finally {
-                btnLookup.innerHTML = 'Kiểm Tra';
-            }
-        });
+                    showSupportToast(`Tìm thấy ${data.tickets.length} thư của bạn.`, "success");
+                } else { showSupportToast("Không tìm thấy thư hỗ trợ nào!", "error"); }
+            } catch (err) { showSupportToast("Lỗi tra cứu!", "error"); }
+            btnLookup.innerHTML = 'Kiểm Tra';
+        };
     }
 
-    if(btnBackToList) {
-        btnBackToList.addEventListener("click", () => {
-            ticketDetail.style.display = "none";
-            ticketList.style.display = "flex";
-        });
-    }
+    const btnBackToList = document.getElementById("btn-back-to-tickets");
+    if(btnBackToList) btnBackToList.onclick = () => { ticketDetail.style.display = "none"; ticketList.style.display = "flex"; };
 
+    // --- RENDER DANH SÁCH & MODAL PIN ---
     function renderTicketList(tickets) {
-        ticketList.innerHTML = "";
+        const container = document.getElementById("ticket-items-container");
+        if (!container) return;
+        
+        container.innerHTML = ""; 
+        
         tickets.forEach(t => {
             const statusMap = {
                 'pending': { class: 'status-pending', text: 'Đang Chờ' },
@@ -3279,76 +2903,121 @@ document.addEventListener("DOMContentLoaded", () => {
             
             const item = document.createElement("div");
             item.className = "support-ticket-item";
-            item.innerHTML = `
-                <div>
-                    <h4 style="margin:0 0 5px 0; font-size:14px; color: var(--text-color);">${t.title}</h4>
-                    <span style="font-size:11px; opacity:0.6; color: var(--text-color);">Ngày gửi: ${new Date(t.created_at).toLocaleDateString('vi-VN')}</span>
-                </div>
-                <span class="sp-status-badge ${st.class}">${st.text}</span>
-            `;
-            // Khi click vào item thì xem chi tiết 1 thư
-            item.addEventListener("click", () => showTicketDetail(t));
-            ticketList.appendChild(item);
+            item.style.cursor = "pointer";
+            item.innerHTML = `<div><h4 style="margin:0 0 5px 0; font-size:14px; color:var(--text-main);"><i class="fas fa-lock" style="color:#f6d365; margin-right:8px;"></i>${t.title}</h4><span style="font-size:11px; opacity:0.6;">${new Date(t.created_at).toLocaleDateString('vi-VN')}</span></div><span class="sp-status-badge ${st.class}">${st.text}</span>`;
+            
+            item.onclick = async () => {
+                const userPin = await new Promise(resolve => {
+                    const m = document.getElementById('pin-modal-overlay');
+                    const i = document.getElementById('check-pin-input');
+                    const c = document.getElementById('btn-confirm-pin');
+                    const x = document.getElementById('btn-cancel-pin');
+                    const box = m ? m.querySelector('.modal-box') : null;
+                    
+                    if(!m || !i || !c || !x) {
+                        console.error("Thiếu phần tử Modal PIN trong HTML!");
+                        resolve(null); return; 
+                    }
+
+                    i.value = ''; 
+                    m.classList.add('show');
+                    m.style.display = 'flex'; 
+                    setTimeout(() => { m.style.opacity = "1"; if(box) box.style.transform = "translateY(0)"; }, 10); 
+                    i.focus();
+                    
+                    const close = (val) => { 
+                        m.style.opacity = "0"; if(box) box.style.transform = "translateY(-20px)";
+                        setTimeout(() => { m.style.display = 'none';
+                            m.classList.remove('show');
+                         }, 300); 
+                        c.onclick = null; x.onclick = null; i.onkeypress = null; 
+                        resolve(val); 
+                    };
+                    
+                    c.onclick = () => close(i.value.trim()); 
+                    x.onclick = () => close(null);
+                    i.onkeypress = (e) => { if(e.key === 'Enter') close(i.value.trim()); };
+                });
+
+                if (userPin === null) return; 
+
+                if (userPin === String(t.pin_code)) { 
+                    showSupportToast("✅ Nhập mã thành công!", "success"); 
+                    showTicketDetail(t); 
+                } else { 
+                    showSupportToast("❌ Mã PIN không chính xác!", "error"); 
+                }
+            };
+            container.appendChild(item);
         });
     }
 
     function showTicketDetail(ticket) {
-        ticketList.style.display = "none";
-        ticketDetail.style.display = "flex";
+        const ticketListEl = document.getElementById("sp-ticket-list");
+        const ticketDetailEl = document.getElementById("sp-ticket-detail");
+        
+        if (ticketListEl) ticketListEl.style.display = "none"; 
+        if (ticketDetailEl) ticketDetailEl.style.display = "flex";
         
         const closedMsg = document.getElementById("sp-ticket-closed-msg");
-        if(ticket.status === 'resolved' || ticket.status === 'rejected') {
-            closedMsg.style.display = "block";
-        } else {
-            closedMsg.style.display = "none";
+        if (closedMsg) {
+            closedMsg.style.display = (ticket.status === 'resolved' || ticket.status === 'rejected') ? "block" : "none";
         }
 
         const chatBox = document.getElementById("sp-chat-history");
-        chatBox.innerHTML = `
-            <div class="sp-msg-bubble sp-msg-user">
-                <strong style="font-size: 11px; opacity: 0.8; margin-bottom: 5px; display: block;">Vấn đề của bạn:</strong>
-                ${ticket.message}
-            </div>
-        `;
+        if (chatBox) {
+            chatBox.innerHTML = `
+                <div class="sp-msg-bubble sp-msg-user">
+                    <strong style="font-size: 11px; opacity: 0.8; margin-bottom: 5px; display: block;">Vấn đề của bạn:</strong>
+                    ${ticket.message}
+                </div>
+            `;
 
-        if(ticket.admin_reply) {
-            chatBox.innerHTML += `
-                <div class="sp-msg-bubble sp-msg-admin">
-                    <strong style="font-size: 11px; opacity: 0.8; margin-bottom: 5px; display: block; color: #4facfe;">Phản hồi từ Admin:</strong>
-                    ${ticket.admin_reply}
-                </div>
-            `;
-        } else {
-             chatBox.innerHTML += `
-                <div style="text-align:center; font-size: 12px; color: rgba(255,255,255,0.5); padding: 10px; font-style: italic;">
-                    Admin đang kiểm tra và sẽ sớm phản hồi cho bạn...
-                </div>
-            `;
+            if(ticket.admin_reply) {
+                const replyTime = ticket.updated_at || ticket.created_at || new Date().toLocaleString('vi-VN', { 
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                });
+                chatBox.innerHTML += `
+                    <div class="sp-msg-bubble sp-msg-admin clickable-reply" data-full-reply="${ticket.admin_reply}" data-timestamp="${replyTime}" style="cursor: pointer; position: relative; transition: all 0.3s ease;">
+                        <div class="reply-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <strong style="font-size: 11px; opacity: 0.9; color: #4facfe;">Phản hồi từ Admin</strong>
+                            <span class="reply-time" style="font-size: 10px; opacity: 0.7; color: rgba(255,255,255,0.6); white-space: nowrap;">${replyTime}</span>
+                        </div>
+                        <div class="reply-preview" style="max-height: 60px; overflow: hidden; transition: max-height 0.3s ease; line-height: 1.4;">${ticket.admin_reply}</div>
+                        <div class="reply-expand" style="margin-top: 4px; font-size: 11px; opacity: 0; color: #4facfe; transition: opacity 0.3s ease;">▼ Xem toàn bộ</div>
+                    </div>
+                `;
+            } else {
+                 chatBox.innerHTML += `
+                    <div style="text-align:center; font-size: 12px; color: rgba(255,255,255,0.5); padding: 10px; font-style: italic;">
+                        Admin đang kiểm tra và sẽ sớm phản hồi cho bạn...
+                    </div>
+                `;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            // ✅ FIXED: Enhanced Admin Reply Interactions per TODO - Step 2 COMPLETE
+            handleAdminReplyClicks(chatBox, ticket.status);
         }
-        chatBox.scrollTop = chatBox.scrollHeight;
     }
 });
 
-// SUPPORT MODAL FUNCTIONS (Phase 4)
+
+
+// GLOBAL: Mở Form Support từ Menu
 window.openSupportCenter = function() {
-    const modal = document.getElementById('user-support-modal');
+    const modal = document.getElementById('support-modal-overlay');
     if (modal) {
+        modal.classList.add('show');
         modal.style.display = 'flex';
-        // Auto-fill email if logged in
-        const userEmail = localStorage.getItem('userEmail') || '';
-        const supportEmail = document.getElementById('support-email');
-        const historyEmail = document.getElementById('history-email-check');
+        setTimeout(() => modal.style.opacity = "1", 10);
+        
+        const account = typeof getCurrentAccount === 'function' ? getCurrentAccount() : null;
+        const userEmail = localStorage.getItem('userEmail') || (account ? account.email : '');
+        
+        const supportEmail = document.getElementById('sp-email');
+        const lookupEmail = document.getElementById('sp-lookup-email');
         if (supportEmail) supportEmail.value = userEmail;
-        if (historyEmail) historyEmail.value = userEmail;
+        if (lookupEmail) lookupEmail.value = userEmail;
     }
 };
-
-// Cấp quyền cho HTML gọi các hàm Support Modal
-window.openSupportModal = openSupportModal;
-window.closeSupportModal = closeSupportModal;
-window.switchSupportTab = switchSupportTab;
-window.submitUserTicket = submitUserTicket;
-window.fetchUserHistory = fetchUserHistory;
-
-
-

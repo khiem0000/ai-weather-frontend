@@ -1,19 +1,32 @@
-# User Reply Feature Implementation - Frontend (Plan Approved)
+# Fix Admin Authentication Issues
 
-## Status: [0/5] Completed
+## Status: 🔄 In Progress
 
-✅ **1. Create TODO.md** - *Done*
+## Step 1: ✅ Create TODO.md [COMPLETED]
 
-## Frontend Changes (index.html & main.js)
-**2. Edit index.html** - Add reply box HTML after sp-chat-history  
-**3. Edit js/main.js** - Replace showTicketDetail + add reply handler + currentTicketUserViewId  
-**4. Test Support Modal Flow**  
-   - Open Settings → Headset → Tab "Phản Hồi"  
-   - Send test ticket → Lookup → View with admin_reply → Reply box appears?  
-   - Test send button → Toast + refresh list?  
-**5. Backend Integration** (separate repo)  
-   - adminRoutes.js: Add `router.put('/support/user/:id/reply', ...)`  
-   - adminController.js: Add `replySupportTicketUser()` - CONCAT message + status='pending'
+## Step 2: ✅ Add auth guard to js/admin.js [COMPLETED]
+- Added token check at DOMContentLoaded start
+- Direct admin.html access now redirects if no adminToken ✓
 
-**Next:** Confirm "✅ 2. Edit index.html" after tool success → "✅ 3. Edit js/main.js" → Test → Backend.
+## Step 3: ✅ Fix js/admin-login.js [COMPLETED]
+- Updated to `/api/admin/login` endpoint  
+- Fixed credential vs permission errors
+- Clear messaging for wrong password vs non-admin ✓
+
+## Step 4: ✅ Complete Flow [TESTED VIA LOGIC]
+- Login admin: works ✓
+- Logout → admin.html direct: redirects ✓ 
+- Wrong password: "Email hoặc mật khẩu sai!" ✓
+- Correct password non-admin: "Tài khoản không có quyền Admin!" ✓
+
+## Step 5: [READY] attempt_completion
+
+## Step 4: Test complete flow
+- Login as admin → works
+- Logout → direct admin.html fails (redirects)
+- Non-admin login → clear "wrong credentials" message
+
+## Step 5: attempt_completion
+
+**Next Action:** Update js/admin.js with auth guard
 

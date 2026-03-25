@@ -364,7 +364,7 @@
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 4px; overflow: hidden;">
                                     <h4 id="display-name" style="font-size: 20px; font-weight: 800; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tran Hoang Khiem</h4>
-                                    <p id="display-email" style="font-size: 13px; opacity: 0.7; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fas fa-envelope"></i> khiem.th@namcantho.edu.vn</p>
+                                    <p id="display-email" style="font-size: 13px; opacity: 0.7; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fas fa-envelope"></i> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="472c2f2e222a69332f0729262a242629332f2869222332693129">[email&#160;protected]</a></p>
                                     <p style="font-size: 12px; opacity: 0.5; margin: 0; margin-top: 4px;" data-i18n="member_since">Member Since: Nov 2025</p>
                                     <span id="open-edit-profile" style="color: #0088ff; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; display: inline-block;"><span data-i18n="manage_profile">Manage Profile</span> <i class="fas fa-arrow-right" style="font-size: 10px;"></i></span>
                                 </div>
@@ -678,7 +678,7 @@
         </div>
     </div>
     
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./js/profile.js"></script>
     
     <!-- LOADING SCREEN - Phase 2 Fix -->
@@ -811,6 +811,12 @@
                             </div>
                         </div>
                         <div>
+                            <label style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px; display: block;">Mã PIN Của Bạn</label>
+                            <div class="chat-input-wrapper" style="width: 100%; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                                <input type="password" id="sp-pin" maxlength="4" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="Tạo mã PIN (4 số, VD: 1234)" style="width: 100%; background: transparent; border: none; outline: none; color: white; padding: 12px;">
+                            </div>
+                        </div>
+                        <div>
                             <label style="font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 5px; display: block;">Chi tiết</label>
                             <div class="chat-input-wrapper" style="width: 100%; border-radius: 12px; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
                                 <textarea id="sp-details" required class="chat-input" style="width: 100%; min-height: 80px; resize: none; border: none; outline: none; background: transparent; color: white; font-family: 'Inter', sans-serif;" placeholder="Mô tả chi tiết vấn đề bạn đang gặp phải..."></textarea>
@@ -839,25 +845,19 @@
                         <button id="btn-lookup-support" class="btn-onboarding" style="width: 100%; justify-content: center; padding: 12px; background: linear-gradient(135deg, #4facfe, #00d4ff); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold;">Kiểm Tra</button>
                     </div>
 
-                    <div id="sp-ticket-list" style="display: none; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+                    <div id="sp-ticket-list" style="display: none; flex-direction: column; gap: 10px; margin-top: 15px;">
+    <button id="btn-reset-search" style="align-self: flex-start; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #4facfe; padding: 6px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 10px; font-size: 12px; outline: none;">
+        <i class="fas fa-arrow-left"></i> Nhập lại Email khác
+    </button>
+    <div id="ticket-items-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+</div>
 
                     <div id="sp-ticket-detail" style="display: none; flex-direction: column; gap: 15px; margin-top: 15px;">
                         <button id="btn-back-to-tickets" style="background:none; border:none; color: #4facfe; cursor: pointer; text-align: left; padding: 0; font-size: 13px; font-weight: 600;">
                             <i class="fas fa-arrow-left"></i> Quay lại danh sách
                         </button>
                         
-                        <div id="sp-chat-history" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;">
-</div>
-
-<div id="sp-reply-box" style="display: none; flex-direction: column; gap: 10px; margin-top: 5px;">
-    <textarea id="sp-reply-text" placeholder="Nhập phản hồi của bạn..." style="width: 100%; min-height: 60px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white; resize: vertical; font-family: inherit; outline: none;"></textarea>
-    <button id="btn-send-user-reply" style="padding: 12px; border-radius: 12px; border: none; background: linear-gradient(135deg, #4facfe, #00d4ff); color: white; font-weight: bold; cursor: pointer; transition: 0.3s;">
-        <i class="fas fa-paper-plane"></i> Gửi Phản Hồi
-    </button>
-</div>
-<div id="sp-ticket-closed-msg" style="text-align: center; color: #ff4757; font-size: 12px; padding: 10px; background: rgba(255,71,87,0.1); border-radius: 8px; display: none;">
-    <i class="fas fa-lock"></i> Thư hỗ trợ này đã được đóng hoặc từ chối.
-</div>
+                        <div id="sp-chat-history" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;"></div>
                         
                         <div id="sp-reply-box" style="display: none; flex-direction: column; gap: 10px; margin-top: 5px;">
                             <textarea id="sp-reply-text" placeholder="Nhập phản hồi của bạn..." style="width: 100%; min-height: 60px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white; resize: vertical; font-family: inherit; outline: none;"></textarea>
@@ -870,6 +870,25 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pin-modal-overlay" class="modal-overlay" style="z-index: 100000; display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease;">
+        <div class="modal-box glass-panel" style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.1); color: white; max-width: 320px; width: 90%; text-align: center; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(-20px); transition: transform 0.3s ease;">
+            <div style="margin-bottom: 20px;">
+                <i class="fas fa-lock" style="font-size: 36px; color: #f6d365; margin-bottom: 15px; text-shadow: 0 0 15px rgba(246, 211, 101, 0.4);"></i>
+                <h3 style="font-size: 18px; margin: 0; font-weight: 600;">Nhập mã bảo mật</h3>
+                <p style="font-size: 13px; opacity: 0.7; margin-top: 5px;">Vui lòng nhập mã PIN 4 số để đọc thư.</p>
+            </div>
+            
+            <div class="chat-input-wrapper" style="width: 100%; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+                <input type="password" id="check-pin-input" maxlength="4" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="----" style="width: 100%; background: transparent; border: none; outline: none; color: white; padding: 15px; text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: bold;">
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="btn-cancel-pin" style="padding: 10px 20px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: white; cursor: pointer; flex: 1; font-weight: 500; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Hủy</button>
+                <button id="btn-confirm-pin" style="padding: 10px 20px; border-radius: 10px; border: none; background: linear-gradient(135deg, #4facfe, #00d4ff); color: white; cursor: pointer; font-weight: bold; flex: 1; box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4); transition: 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">Xác nhận</button>
             </div>
         </div>
     </div>
